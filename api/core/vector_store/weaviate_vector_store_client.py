@@ -110,10 +110,10 @@ class WeaviateWithSimilaritiesVectorStore(WeaviateVectorStore, EnhanceVectorStor
             "class": class_name,  # <= note the capital "A".
             "description": f"Class for {class_name}",
             "properties": properties,
-            "vectorIndexConfig": {
-                "efConstruction": 160,
-                "maxConnections": 32
-            },
+            # "vectorIndexConfig": {
+            #     "efConstruction": 160,
+            #     "maxConnections": 32
+            # },
         }
         client.schema.create_class(class_obj)
 

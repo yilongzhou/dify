@@ -1,14 +1,19 @@
 import datetime
 import json
+import logging
 import random
 import string
 
 import click
+from llama_index.data_structs.node_v2 import DocumentRelationship, Node
 
+from core.index.vector_index import VectorIndex
+from extensions.ext_redis import redis_client
 from libs.password import password_pattern, valid_password, hash_password
 from libs.helper import email as email_validate
 from extensions.ext_database import db
 from models.account import InvitationCode
+from models.dataset import Dataset, Document, DocumentSegment
 from models.model import Account, AppModelConfig, ApiToken, Site, App, RecommendedApp
 import secrets
 import base64
@@ -153,8 +158,87 @@ def generate_recommended_apps():
     print('Done!')
 
 
+@click.command('sync-index', help='Sync vector objects to another vector store')
+def sync_index_vector_objects():
+    print('Syncing vector objects...')
+    datasets = db.session.query(Dataset).order_by(Dataset.created_at.asc()).limit(100).all()
+    while len(datasets) > 0:
+        latest_dataset = None
+        for dataset in datasets:
+            latest_dataset = dataset
+
+            if dataset.indexing_technique != "high_quality":
+                continue
+
+            vector_index = VectorIndex(dataset=dataset)
+
+            print('Syncing dataset {}...'.format(dataset.id))
+            documents = db.session.query(Document).filter(Document.dataset_id == dataset.id).all()
+            for document in documents:
+                if document.indexing_status != 'completed' or document.archived or not document.enabled:
+                    continue
+
+                cache_key = 'synced_doc:{}'.format(document.id)
+                cache_result = redis_client.get(cache_key)
+                if cache_result is not None:
+                    print('Document {} has been synced before, skip.'.format(document.id))
+                    continue
+
+                segments = db.session.query(DocumentSegment).filter(
+                    DocumentSegment.document_id == document.id,
+                    DocumentSegment.enabled == True
+                ) \
+                    .order_by(DocumentSegment.position.asc()).all()
+
+                nodes = []
+                previous_node = None
+                for segment in segments:
+                    relationships = {
+                        DocumentRelationship.SOURCE: document.id
+                    }
+
+                    if previous_node:
+                        relationships[DocumentRelationship.PREVIOUS] = previous_node.doc_id
+                        previous_node.relationships[DocumentRelationship.NEXT] = segment.index_node_id
+
+                    node = Node(
+                        doc_id=segment.index_node_id,
+                        doc_hash=segment.index_node_hash,
+                        text=segment.content,
+                        extra_info=None,
+                        node_info=None,
+                        relationships=relationships
+                    )
+
+                    previous_node = node
+
+                    nodes.append(node)
+
+                try:
+                    vector_index.add_nodes(
+                        nodes=nodes,
+                        duplicate_check=True
+                    )
+
+                    redis_client.setex(cache_key, 3600, 1)
+                except Exception:
+                    logging.exception('failed to add nodes to vector index')
+                    continue
+
+        if latest_dataset is None:
+            datasets = []
+        else:
+            datasets = db.session.query(Dataset).filter(
+                Dataset.created_at > latest_dataset.created_at,
+                Dataset.id != latest_dataset.id
+            ).order_by(Dataset.created_at.asc()).limit(100).all()
+
+    print('Done!')
+
+
 def register_commands(app):
     app.cli.add_command(reset_password)
     app.cli.add_command(reset_email)
     app.cli.add_command(generate_invitation_codes)
     app.cli.add_command(generate_recommended_apps)
+    app.cli.add_command(sync_index_vector_objects)
