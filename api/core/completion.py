@@ -187,6 +187,8 @@ And answer according to the language of the user's question.
 
             if chain_output:
                 human_inputs['context'] = chain_output
+
+                # Inspired by @Yorki
                 human_message_prompt += """Use the following CONTEXT as your learned knowledge.
 [CONTEXT]
 {context}

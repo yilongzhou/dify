@@ -3,10 +3,11 @@ from llama_index import ServiceContext, GPTVectorStoreIndex
 from requests import ReadTimeout
 from tenacity import retry, retry_if_exception_type, stop_after_attempt
 
+from core.vector_store.pinecone_vector_store_client import PineconeVectorStoreClient
 from core.vector_store.qdrant_vector_store_client import QdrantVectorStoreClient
 from core.vector_store.weaviate_vector_store_client import WeaviateVectorStoreClient
 
-SUPPORTED_VECTOR_STORES = ['weaviate', 'qdrant']
+SUPPORTED_VECTOR_STORES = ['weaviate', 'qdrant', 'pinecone']
 
 
 class VectorStore:
@@ -35,6 +36,11 @@ class VectorStore:
                 api_key=app.config['QDRANT_API_KEY'],
                 root_path=app.root_path
             )
+        elif self._vector_store == 'pinecone':
+            self._client = PineconeVectorStoreClient(
+                api_key=app.config['PINECONE_API_KEY'],
+                environment=app.config['PINECONE_ENVIRONMENT']
+            )
 
         app.extensions['vector_store'] = self
 
@@ -48,10 +54,10 @@ class VectorStore:
 
         return index
 
-    def to_index_struct(self, index_id: str) -> dict:
+    def to_index_struct(self, dataset_id: str) -> dict:
         return {
             "type": self._vector_store,
-            "vector_store": self.get_client().to_index_config(index_id)
+            "vector_store": self.get_client().to_index_config(dataset_id)
         }
 
     def get_client(self):

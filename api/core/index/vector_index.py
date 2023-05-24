@@ -21,8 +21,7 @@ class VectorIndex:
 
     def add_nodes(self, nodes: List[Node], duplicate_check: bool = False):
         if not self._dataset.index_struct_dict:
-            index_id = "Vector_index_" + self._dataset.id.replace("-", "_")
-            self._dataset.index_struct = json.dumps(vector_store.to_index_struct(index_id))
+            self._dataset.index_struct = json.dumps(vector_store.to_index_struct(self._dataset.id))
             db.session.commit()
 
         service_context = IndexBuilder.get_default_service_context(tenant_id=self._dataset.tenant_id)

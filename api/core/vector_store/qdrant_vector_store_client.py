@@ -56,7 +56,8 @@ class QdrantVectorStoreClient(BaseVectorStoreClient):
             )
         )
 
-    def to_index_config(self, index_id: str) -> dict:
+    def to_index_config(self, dataset_id: str) -> dict:
+        index_id = "Vector_index_" + dataset_id.replace("-", "_")
         return {"collection_name": index_id}
 
 

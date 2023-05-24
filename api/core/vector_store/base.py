@@ -12,7 +12,7 @@ class BaseVectorStoreClient(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def to_index_config(self, index_id: str) -> dict:
+    def to_index_config(self, dataset_id: str) -> dict:
         raise NotImplementedError
 
 

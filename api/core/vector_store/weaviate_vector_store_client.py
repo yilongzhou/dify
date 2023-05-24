@@ -1,7 +1,9 @@
 import json
 import weaviate
 from dataclasses import field
-from typing import List, Any, Dict, Optional
+from typing import List, Any, Dict, Optional, cast
+
+from weaviate import UnexpectedStatusCodeException
 
 from core.vector_store.base import BaseVectorStoreClient, BaseGPTVectorStoreIndex, EnhanceVectorStore
 from llama_index import ServiceContext, GPTWeaviateIndex, GPTVectorStoreIndex
@@ -12,7 +14,7 @@ from llama_index.vector_stores import WeaviateVectorStore
 from llama_index.vector_stores.types import VectorStoreQuery, VectorStoreQueryResult, VectorStoreQueryMode
 from llama_index.readers.weaviate.utils import (
     parse_get_response,
-    validate_client,
+    validate_client, get_default_class_prefix,
 )
 
 
@@ -53,11 +55,68 @@ class WeaviateVectorStoreClient(BaseVectorStoreClient):
             )
         )
 
-    def to_index_config(self, index_id: str) -> dict:
+    def to_index_config(self, dataset_id: str) -> dict:
+        index_id = "Vector_index_" + dataset_id.replace("-", "_")
         return {"class_prefix": index_id}
 
 
 class WeaviateWithSimilaritiesVectorStore(WeaviateVectorStore, EnhanceVectorStore):
+    def __init__(
+        self,
+        weaviate_client: Optional[Any] = None,
+        class_prefix: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize params."""
+        import_err_msg = (
+            "`weaviate` package not found, please run `pip install weaviate-client`"
+        )
+        try:
+            import weaviate  # noqa: F401
+            from weaviate import Client  # noqa: F401
+        except ImportError:
+            raise ImportError(import_err_msg)
+
+        if weaviate_client is None:
+            raise ValueError("Missing Weaviate client!")
+
+        self._client = cast(Client, weaviate_client)
+        # validate class prefix starts with a capital letter
+        if class_prefix is not None and not class_prefix[0].isupper():
+            raise ValueError(
+                "Class prefix must start with a capital letter, e.g. 'Gpt'"
+            )
+        self._class_prefix = class_prefix or get_default_class_prefix()
+        # try to create schema
+        self.create_schema(self._client, self._class_prefix)
+
+    def create_schema(self, client: Any, class_prefix: str) -> None:
+        """Create schema."""
+        validate_client(client)
+        # first check if schema exists
+        class_name = _class_name(class_prefix)
+        try:
+            exist_class = client.schema.get(class_name)
+            if exist_class:
+                return
+        except UnexpectedStatusCodeException as e:
+            if e.status_code != 404:
+                raise e
+        except Exception as e:
+            raise e
+
+        properties = NODE_SCHEMA
+        class_obj = {
+            "class": class_name,  # <= note the capital "A".
+            "description": f"Class for {class_name}",
+            "properties": properties,
+            "vectorIndexConfig": {
+                "efConstruction": 160,
+                "maxConnections": 32
+            },
+        }
+        client.schema.create_class(class_obj)
+
     def query(self, query: VectorStoreQuery) -> VectorStoreQueryResult:
         """Query index for top k most similar nodes."""
         nodes = self.weaviate_query(
