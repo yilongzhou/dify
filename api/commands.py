@@ -159,7 +159,8 @@ def generate_recommended_apps():
 
 
 @click.command('sync-index', help='Sync vector objects to another vector store')
-def sync_index_vector_objects():
+@click.option('--apply', help='Apply to dataset index struct.')
+def sync_index_vector_objects(apply):
     print('Syncing vector objects...')
     datasets = db.session.query(Dataset).order_by(Dataset.created_at.asc()).limit(100).all()
     while len(datasets) > 0:
@@ -220,7 +221,7 @@ def sync_index_vector_objects():
                         duplicate_check=True
                     )
 
-                    redis_client.setex(cache_key, 3600, 1)
+                    redis_client.setex(cache_key, 86400, 1)
                 except Exception:
                     logging.exception('failed to add nodes to vector index')
                     continue
