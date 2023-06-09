@@ -16,19 +16,21 @@ from models.dataset import Dataset, Embedding
 
 class VectorIndex:
 
-    def __init__(self, dataset: Dataset):
+    def __init__(self, dataset: Dataset, index_struct_dict: Optional[dict] = None):
         self._dataset = dataset
+        self._index_struct_dict = index_struct_dict
 
     def add_nodes(self, nodes: List[Node], duplicate_check: bool = False):
         if not self._dataset.index_struct_dict:
-            self._dataset.index_struct = json.dumps(vector_store.to_index_struct(self._dataset.id))
+            self._dataset.index_struct = json.dumps(self._index_struct_dict if self._index_struct_dict
+                                                    else vector_store.to_index_struct(self._dataset.id))
             db.session.commit()
 
         service_context = IndexBuilder.get_default_service_context(tenant_id=self._dataset.tenant_id)
 
         index = vector_store.get_index(
             service_context=service_context,
-            index_struct=self._dataset.index_struct_dict
+            index_struct=self._index_struct_dict if self._index_struct_dict else self._dataset.index_struct_dict
         )
 
         if duplicate_check:

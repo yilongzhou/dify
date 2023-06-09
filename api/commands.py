@@ -9,6 +9,7 @@ from llama_index.data_structs.node_v2 import DocumentRelationship, Node
 
 from core.index.vector_index import VectorIndex
 from extensions.ext_redis import redis_client
+from extensions.ext_vector_store import vector_store
 from libs.password import password_pattern, valid_password, hash_password
 from libs.helper import email as email_validate
 from extensions.ext_database import db
@@ -159,7 +160,8 @@ def generate_recommended_apps():
 
 
 @click.command('sync-index', help='Sync vector objects to another vector store')
-@click.option('--apply', help='Apply to dataset index struct.')
+@click.option('--apply', is_flag=True, default=False,
+              help='Apply index struct param to dataset.')
 def sync_index_vector_objects(apply):
     print('Syncing vector objects...')
     datasets = db.session.query(Dataset).order_by(Dataset.created_at.asc()).limit(100).all()
@@ -171,7 +173,8 @@ def sync_index_vector_objects(apply):
             if dataset.indexing_technique != "high_quality":
                 continue
 
-            vector_index = VectorIndex(dataset=dataset)
+            index_struct_dict = vector_store.to_index_struct(dataset.id)
+            vector_index = VectorIndex(dataset=dataset, index_struct_dict=index_struct_dict)
 
             print('Syncing dataset {}...'.format(dataset.id))
             documents = db.session.query(Document).filter(Document.dataset_id == dataset.id).all()
@@ -225,6 +228,12 @@ def sync_index_vector_objects(apply):
                 except Exception:
                     logging.exception('failed to add nodes to vector index')
                     continue
+
+            if apply:
+                dataset.index_struct_dict = json.dumps(index_struct_dict)
+                db.session.commit()
+
+                print('Dataset {} index struct {} applied...'.format(dataset.id, index_struct_dict))
 
         if latest_dataset is None:
             datasets = []
