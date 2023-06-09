@@ -71,3 +71,9 @@ class InvalidMetadataError(BaseHTTPException):
     error_code = 'invalid_metadata'
     description = "The metadata content is incorrect. Please check and verify."
     code = 400
+
+
+class CurrentVectorStoreNotSupportHitTestingError(BaseHTTPException):
+    error_code = 'current_vector_store_not_support_hit_testing'
+    description = "The current vector store does not support hit testing."
+    code = 400

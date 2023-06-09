@@ -12,7 +12,7 @@
 - [Docker Compose](https://docs.docker.com/compose/install/)
 - [Node.js v18.x (LTS)](http://nodejs.org)
 - [npm](https://www.npmjs.com/) 版本 8.x.x 或 [Yarn](https://yarnpkg.com/)
-- [Python](https://www.python.org/) 版本 3.10.x
+- [Python](https://www.python.org/) 版本 3.11.x
 
 ## 本地开发
 

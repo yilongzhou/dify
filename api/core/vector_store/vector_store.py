@@ -3,11 +3,12 @@ from llama_index import ServiceContext, GPTVectorStoreIndex
 from requests import ReadTimeout
 from tenacity import retry, retry_if_exception_type, stop_after_attempt
 
+from core.vector_store.milvus_vector_store_client import MilvusVectorStoreClient
 from core.vector_store.pinecone_vector_store_client import PineconeVectorStoreClient
 from core.vector_store.qdrant_vector_store_client import QdrantVectorStoreClient
 from core.vector_store.weaviate_vector_store_client import WeaviateVectorStoreClient
 
-SUPPORTED_VECTOR_STORES = ['weaviate', 'qdrant', 'pinecone']
+SUPPORTED_VECTOR_STORES = ['weaviate', 'qdrant', 'pinecone', 'milvus']
 
 
 class VectorStore:
@@ -41,6 +42,14 @@ class VectorStore:
                 api_key=app.config['PINECONE_API_KEY'],
                 environment=app.config['PINECONE_ENVIRONMENT']
             )
+        elif self._vector_store == 'milvus':
+            self._client = MilvusVectorStoreClient(
+                host=app.config['MILVUS_HOST'],
+                port=app.config['MILVUS_PORT'],
+                user=app.config['MILVUS_USER'],
+                password=app.config['MILVUS_PASSWORD'],
+                use_secure=app.config['MILVUS_USE_SECURE'],
+            )
 
         app.extensions['vector_store'] = self
 
@@ -65,3 +74,10 @@ class VectorStore:
             raise Exception("Vector store client is not initialized.")
 
         return self._client
+
+    def support_hit_testing(self):
+        if isinstance(self._client, MilvusVectorStoreClient):
+            # search API not return vector data
+            return False
+
+        return True

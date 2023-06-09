@@ -11,14 +11,19 @@ from sklearn.manifold import TSNE
 from core.docstore.empty_docstore import EmptyDocumentStore
 from core.index.vector_index import VectorIndex
 from extensions.ext_database import db
+from extensions.ext_vector_store import vector_store
 from models.account import Account
 from models.dataset import Dataset, DocumentSegment, DatasetQuery
+from services.errors.dataset import VectorStoreNotSupportHitTestingError
 from services.errors.index import IndexNotInitializedError
 
 
 class HitTestingService:
     @classmethod
     def retrieve(cls, dataset: Dataset, query: str, account: Account, limit: int = 10) -> dict:
+        if not vector_store.support_hit_testing():
+            raise VectorStoreNotSupportHitTestingError()
+
         index = VectorIndex(dataset=dataset).query_index
 
         if not index:
@@ -67,11 +72,21 @@ class HitTestingService:
         ]
 
         for node in nodes:
-            embeddings.append(node.node.embedding)
+            if node.node.embedding:
+                embeddings.append(node.node.embedding)
 
         tsne_position_data = cls.get_tsne_positions_from_embeddings(embeddings)
 
         query_position = tsne_position_data.pop(0)
+
+        if not tsne_position_data:
+            return {
+                "query": {
+                    "content": query_bundle.query_str,
+                    "tsne_position": query_position,
+                },
+                "records": []
+            }
 
         i = 0
         records = []

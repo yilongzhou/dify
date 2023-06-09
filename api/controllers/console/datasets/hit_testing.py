@@ -8,12 +8,14 @@ import services
 from controllers.console import api
 from controllers.console.app.error import ProviderNotInitializeError, ProviderQuotaExceededError, \
     ProviderModelCurrentlyNotSupportError
-from controllers.console.datasets.error import HighQualityDatasetOnlyError, DatasetNotInitializedError
+from controllers.console.datasets.error import HighQualityDatasetOnlyError, DatasetNotInitializedError, \
+    CurrentVectorStoreNotSupportHitTestingError
 from controllers.console.setup import setup_required
 from controllers.console.wraps import account_initialization_required
 from core.llm.error import ProviderTokenNotInitError, QuotaExceededError, ModelCurrentlyNotSupportError
 from libs.helper import TimestampField
 from services.dataset_service import DatasetService
+from services.errors.dataset import VectorStoreNotSupportHitTestingError
 from services.hit_testing_service import HitTestingService
 
 document_fields = {
@@ -101,6 +103,8 @@ class HitTestingApi(Resource):
             raise ProviderQuotaExceededError()
         except ModelCurrentlyNotSupportError:
             raise ProviderModelCurrentlyNotSupportError()
+        except VectorStoreNotSupportHitTestingError:
+            raise CurrentVectorStoreNotSupportHitTestingError()
         except Exception as e:
             logging.exception("Hit testing failed.")
             raise InternalServerError(str(e))

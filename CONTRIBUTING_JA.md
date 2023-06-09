@@ -14,7 +14,7 @@
 - [Docker Compose](https://docs.docker.com/compose/install/)
 - [Node.js v18.x (LTS)](http://nodejs.org)
 - [npm](https://www.npmjs.com/) バージョン 8.x.x もしくは [Yarn](https://yarnpkg.com/)
-- [Python](https://www.python.org/) バージョン 3.10.x
+- [Python](https://www.python.org/) バージョン 3.11.x
 
 ## ローカル開発
 

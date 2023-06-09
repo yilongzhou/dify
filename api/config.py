@@ -43,6 +43,9 @@ DEFAULTS = {
     'SENTRY_TRACES_SAMPLE_RATE': 1.0,
     'SENTRY_PROFILES_SAMPLE_RATE': 1.0,
     'WEAVIATE_GRPC_ENABLED': 'True',
+    'MILVUS_USER': '',
+    'MILVUS_PASSWORD': '',
+    'MILVUS_USE_SECURE': 'False',
     'CELERY_BACKEND': 'database',
     'PDF_PREVIEW': 'True',
     'LOG_LEVEL': 'INFO',
@@ -146,6 +149,13 @@ class Config:
         # pinecone settings
         self.PINECONE_API_KEY = get_env('PINECONE_API_KEY')
         self.PINECONE_ENVIRONMENT = get_env('PINECONE_ENVIRONMENT')
+
+        # milvus settings
+        self.MILVUS_HOST = get_env('MILVUS_HOST')
+        self.MILVUS_PORT = int(get_env('MILVUS_PORT'))
+        self.MILVUS_USER = get_env('MILVUS_USER')
+        self.MILVUS_PASSWORD = get_env('MILVUS_PASSWORD')
+        self.MILVUS_USE_SECURE = get_bool_env('MILVUS_USE_SECURE')
 
         # cors settings
         self.CONSOLE_CORS_ALLOW_ORIGINS = get_cors_allow_origins(
