@@ -74,10 +74,3 @@ class VectorStore:
             raise Exception("Vector store client is not initialized.")
 
         return self._client
-
-    def support_hit_testing(self):
-        if isinstance(self._client, MilvusVectorStoreClient):
-            # search API not return vector data
-            return False
-
-        return True

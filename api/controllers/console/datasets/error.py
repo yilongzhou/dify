@@ -73,7 +73,3 @@ class InvalidMetadataError(BaseHTTPException):
     code = 400
 
 
-class CurrentVectorStoreNotSupportHitTestingError(BaseHTTPException):
-    error_code = 'current_vector_store_not_support_hit_testing'
-    description = "The current vector store does not support hit testing."
-    code = 400
