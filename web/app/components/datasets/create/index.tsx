@@ -30,7 +30,7 @@ const DatasetUpdateForm = ({ datasetId }: DatasetUpdateFormProps) => {
   const [dataSourceType, setDataSourceType] = useState<DataSourceType>(DataSourceType.FILE)
   const [step, setStep] = useState(1)
   const [indexingTypeCache, setIndexTypeCache] = useState('')
-  const [file, setFile] = useState<File | undefined>()
+  const [fileList, setFiles] = useState<File[]>([])
   const [result, setResult] = useState<createDocumentResponse | undefined>()
   const [hasError, setHasError] = useState(false)
 
@@ -39,8 +39,14 @@ const DatasetUpdateForm = ({ datasetId }: DatasetUpdateFormProps) => {
     setNotionPages(value)
   }
 
+  // TODO
   const updateFile = (file?: File) => {
-    setFile(file)
+    if (file) {
+      setFiles([
+        ...fileList,
+        file,
+      ])
+    }
   }
   const updateIndexingTypeCache = (type: string) => {
     setIndexTypeCache(type)
@@ -104,7 +110,7 @@ const DatasetUpdateForm = ({ datasetId }: DatasetUpdateFormProps) => {
           dataSourceType={dataSourceType}
           dataSourceTypeDisable={!!detail?.data_source_type}
           changeType={setDataSourceType}
-          file={file}
+          files={fileList}
           updateFile={updateFile}
           notionPages={notionPages}
           updateNotionPages={updateNotionPages}
@@ -116,7 +122,7 @@ const DatasetUpdateForm = ({ datasetId }: DatasetUpdateFormProps) => {
           indexingType={detail?.indexing_technique || ''}
           datasetId={datasetId}
           dataSourceType={dataSourceType}
-          file={file}
+          files={fileList}
           notionPages={notionPages}
           onStepChange={changeStep}
           updateIndexingTypeCache={updateIndexingTypeCache}

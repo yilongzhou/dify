@@ -6,13 +6,13 @@ import cn from 'classnames'
 import s from './index.module.css'
 import type { File as FileEntity } from '@/models/datasets'
 import { ToastContext } from '@/app/components/base/toast'
-import Button from '@/app/components/base/button'
 
 import { upload } from '@/service/base'
 
 type IFileUploaderProps = {
-  file?: FileEntity
+  files: FileEntity[]
   onFileUpdate: (file?: FileEntity) => void
+  onPreview: (file: FileEntity) => void
 }
 
 const ACCEPTS = [
@@ -27,9 +27,9 @@ const ACCEPTS = [
   '.csv',
 ]
 
-const MAX_SIZE = 15 * 1024 * 1024
+const MAX_SIZE = 10 * 1024 * 1024
 
-const FileUploader = ({ file, onFileUpdate }: IFileUploaderProps) => {
+const FileUploader = ({ files, onFileUpdate, onPreview }: IFileUploaderProps) => {
   const { t } = useTranslation()
   const { notify } = useContext(ToastContext)
   const [dragging, setDragging] = useState(false)
@@ -48,10 +48,6 @@ const FileUploader = ({ file, onFileUpdate }: IFileUploaderProps) => {
 
     const arr = currentFile.name.split('.')
     return arr[arr.length - 1]
-  }
-  const getFileName = (name: string) => {
-    const arr = name.split('.')
-    return arr.slice(0, -1).join()
   }
   const getFileSize = (size: number) => {
     if (size / 1024 < 10)
@@ -83,6 +79,7 @@ const FileUploader = ({ file, onFileUpdate }: IFileUploaderProps) => {
     const currentXHR = uploadPromise.current
     currentXHR.abort()
   }
+  // TODO
   const fileUpload = async (file?: File) => {
     if (!file)
       return
@@ -133,6 +130,7 @@ const FileUploader = ({ file, onFileUpdate }: IFileUploaderProps) => {
     e.stopPropagation()
     e.target === dragRef.current && setDragging(false)
   }
+  // TODO
   const handleDrop = (e: DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -153,6 +151,7 @@ const FileUploader = ({ file, onFileUpdate }: IFileUploaderProps) => {
     if (fileUploader.current)
       fileUploader.current.click()
   }
+  // TODO
   const removeFile = () => {
     if (fileUploader.current)
       fileUploader.current.value = ''
@@ -160,6 +159,7 @@ const FileUploader = ({ file, onFileUpdate }: IFileUploaderProps) => {
     setCurrentFile(undefined)
     onFileUpdate()
   }
+  // TODO
   const fileChangeHandle = (e: React.ChangeEvent<HTMLInputElement>) => {
     const currentFile = e.target.files?.[0]
     onFileUpdate()
@@ -183,83 +183,80 @@ const FileUploader = ({ file, onFileUpdate }: IFileUploaderProps) => {
     <div className={s.fileUploader}>
       <input
         ref={fileUploader}
+        id="fileUploader"
         style={{ display: 'none' }}
         type="file"
-        id="fileUploader"
+        multiple
         accept={ACCEPTS.join(',')}
         onChange={fileChangeHandle}
       />
       <div className={s.title}>{t('datasetCreation.stepOne.uploader.title')}</div>
-      <div ref={dropRef}>
-        {!currentFile && !file && (
-          <div className={cn(s.uploader, dragging && s.dragging)}>
-            <span>{t('datasetCreation.stepOne.uploader.button')}</span>
-            <label className={s.browse} onClick={selectHandle}>{t('datasetCreation.stepOne.uploader.browse')}</label>
-            {dragging && <div ref={dragRef} className={s.draggingCover}/>}
+      <div ref={dropRef} className={cn(s.uploader, dragging && s.dragging)}>
+        <div className='flex justify-center items-center h-6 mb-2'>
+          <span className={s.uploadIcon}/>
+          <span>{t('datasetCreation.stepOne.uploader.button')}</span>
+          <label className={s.browse} onClick={selectHandle}>{t('datasetCreation.stepOne.uploader.browse')}</label>
+        </div>
+        <div className={s.tip}>{t('datasetCreation.stepOne.uploader.tip')}</div>
+        {dragging && <div ref={dragRef} className={s.draggingCover}/>}
+      </div>
+      <div className={s.fileList}>
+        {currentFile && (
+          <div
+            // onClick={() => onPreview(currentFile)}
+            className={cn(
+              s.file,
+              uploading && s.uploading,
+              // s.active,
+            )}
+          >
+            {uploading && (
+              <div className={s.progressbar} style={{ width: `${percent}%` }}/>
+            )}
+            <div className={s.fileInfo}>
+              <div className={cn(s.fileIcon, s[getFileType(currentFile)])}/>
+              <div className={s.filename}>{currentFile.name}</div>
+              <div className={s.size}>{getFileSize(currentFile.size)}</div>
+            </div>
+            <div className={s.actionWrapper}>
+              {uploading && (
+                <div className={s.percent}>{`${percent}%`}</div>
+              )}
+              {!uploading && (
+                <div className={s.remove} onClick={removeFile}/>
+              )}
+            </div>
           </div>
         )}
       </div>
-      {currentFile && (
-        <div className={cn(s.file, uploading && s.uploading)}>
+      {/* TODO */}
+      {!currentFile && files[0] && (
+        <div
+          // onClick={() => onPreview(currentFile)}
+          className={cn(
+            s.file,
+            uploading && s.uploading,
+            s.active,
+          )}
+        >
           {uploading && (
             <div className={s.progressbar} style={{ width: `${percent}%` }}/>
           )}
-          <div className={cn(s.fileIcon, s[getFileType(currentFile)])}/>
           <div className={s.fileInfo}>
-            <div className={s.filename}>
-              <span className={s.name}>{getFileName(currentFile.name)}</span>
-              <span className={s.extension}>{`.${getFileType(currentFile)}`}</span>
-            </div>
-            <div className={s.fileExtraInfo}>
-              <span className={s.size}>{getFileSize(currentFile.size)}</span>
-              <span className={s.error}></span>
-            </div>
+            <div className={cn(s.fileIcon, s[getFileType(files[0])])}/>
+            <div className={s.filename}>{files[0].name}</div>
+            <div className={s.size}>{getFileSize(files[0].size)}</div>
           </div>
           <div className={s.actionWrapper}>
             {uploading && (
-              <>
-                <div className={s.percent}>{`${percent}%`}</div>
-                <div className={s.divider}/>
-                <div className={s.buttonWrapper}>
-                  <Button className={cn(s.button, 'ml-2 !h-8 bg-white')} onClick={abort}>{t('datasetCreation.stepOne.uploader.cancel')}</Button>
-                </div>
-              </>
+              <div className={s.percent}>{`${percent}%`}</div>
             )}
             {!uploading && (
-              <>
-                <div className={s.buttonWrapper}>
-                  <Button className={cn(s.button, 'ml-2 !h-8 bg-white')} onClick={selectHandle}>{t('datasetCreation.stepOne.uploader.change')}</Button>
-                  <div className={s.divider}/>
-                  <div className={s.remove} onClick={removeFile}/>
-                </div>
-              </>
+              <div className={s.remove} onClick={removeFile}/>
             )}
           </div>
         </div>
       )}
-      {!currentFile && file && (
-        <div className={cn(s.file)}>
-          <div className={cn(s.fileIcon, s[file.extension])}/>
-          <div className={s.fileInfo}>
-            <div className={s.filename}>
-              <span className={s.name}>{getFileName(file.name)}</span>
-              <span className={s.extension}>{`.${file.extension}`}</span>
-            </div>
-            <div className={s.fileExtraInfo}>
-              <span className={s.size}>{getFileSize(file.size)}</span>
-              <span className={s.error}></span>
-            </div>
-          </div>
-          <div className={s.actionWrapper}>
-            <div className={s.buttonWrapper}>
-              <Button className={cn(s.button, 'ml-2 !h-8 bg-white')} onClick={selectHandle}>{t('datasetCreation.stepOne.uploader.change')}</Button>
-              <div className={s.divider}/>
-              <div className={s.remove} onClick={removeFile}/>
-            </div>
-          </div>
-        </div>
-      )}
-      <div className={s.tip}>{t('datasetCreation.stepOne.uploader.tip')}</div>
     </div>
   )
 }

@@ -19,7 +19,7 @@ type IStepOneProps = {
   dataSourceTypeDisable: Boolean
   hasConnection: boolean
   onSetting: () => void
-  file?: File
+  files: File[]
   updateFile: (file?: File) => void
   notionPages?: any[]
   updateNotionPages: (value: any[]) => void
@@ -53,26 +53,29 @@ const StepOne = ({
   hasConnection,
   onSetting,
   onStepChange,
-  file,
+  files,
   updateFile,
   notionPages = [],
   updateNotionPages,
 }: IStepOneProps) => {
   const [showModal, setShowModal] = useState(false)
-  const [showFilePreview, setShowFilePreview] = useState(true)
+  const [currentFile, setCurrentFile] = useState<File | undefined>()
   const [currentNotionPage, setCurrentNotionPage] = useState<Page | undefined>()
   const { t } = useTranslation()
 
-  const hidePreview = () => setShowFilePreview(false)
-
   const modalShowHandle = () => setShowModal(true)
-
   const modalCloseHandle = () => setShowModal(false)
+
+  const updateCurrentFile = (file: File) => {
+    setCurrentFile(file)
+  }
+  const hideFilePreview = () => {
+    setCurrentNotionPage(undefined)
+  }
 
   const updateCurrentPage = (page: Page) => {
     setCurrentNotionPage(page)
   }
-
   const hideNotionPagePreview = () => {
     setCurrentNotionPage(undefined)
   }
@@ -93,7 +96,8 @@ const StepOne = ({
                 if (dataSourceTypeDisable)
                   return
                 changeType(DataSourceType.FILE)
-                hidePreview()
+                hideFilePreview()
+                hideNotionPagePreview()
               }}
             >
               <span className={cn(s.datasetIcon)} />
@@ -109,7 +113,8 @@ const StepOne = ({
                 if (dataSourceTypeDisable)
                   return
                 changeType(DataSourceType.NOTION)
-                hidePreview()
+                hideFilePreview()
+                hideNotionPagePreview()
               }}
             >
               <span className={cn(s.datasetIcon, s.notion)} />
@@ -126,8 +131,9 @@ const StepOne = ({
           </div>
           {dataSourceType === DataSourceType.FILE && (
             <>
-              <FileUploader onFileUpdate={updateFile} file={file} />
-              <Button disabled={!file} className={s.submitButton} type='primary' onClick={onStepChange}>{t('datasetCreation.stepOne.button')}</Button>
+              <FileUploader onFileUpdate={updateFile} onPreview={updateCurrentFile} files={files} />
+              {/* TODO */}
+              <Button disabled={!files.length} className={s.submitButton} type='primary' onClick={onStepChange}>{t('datasetCreation.stepOne.button')}</Button>
             </>
           )}
           {dataSourceType === DataSourceType.NOTION && (
@@ -152,7 +158,7 @@ const StepOne = ({
         </div>
         <EmptyDatasetCreationModal show={showModal} onHide={modalCloseHandle} />
       </div>
-      {file && showFilePreview && <FilePreview file={file} hidePreview={hidePreview} />}
+      {currentFile && <FilePreview file={currentFile} hidePreview={hideFilePreview} />}
       {currentNotionPage && <NotionPagePreview currentPage={currentNotionPage} hidePreview={hideNotionPagePreview} />}
     </div>
   )
