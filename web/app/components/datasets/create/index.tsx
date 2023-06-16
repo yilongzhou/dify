@@ -8,7 +8,7 @@ import StepOne from './step-one'
 import StepTwo from './step-two'
 import StepThree from './step-three'
 import { DataSourceType } from '@/models/datasets'
-import type { DataSet, File, createDocumentResponse } from '@/models/datasets'
+import type { DataSet, createDocumentResponse } from '@/models/datasets'
 import { fetchDataSource, fetchTenantInfo } from '@/service/common'
 import { fetchDataDetail } from '@/service/datasets'
 import type { DataSourceNotionPage } from '@/models/common'
@@ -30,7 +30,7 @@ const DatasetUpdateForm = ({ datasetId }: DatasetUpdateFormProps) => {
   const [dataSourceType, setDataSourceType] = useState<DataSourceType>(DataSourceType.FILE)
   const [step, setStep] = useState(1)
   const [indexingTypeCache, setIndexTypeCache] = useState('')
-  const [fileList, setFiles] = useState<File[]>([])
+  const [fileList, setFiles] = useState<any[]>([])
   const [result, setResult] = useState<createDocumentResponse | undefined>()
   const [hasError, setHasError] = useState(false)
 
@@ -40,14 +40,19 @@ const DatasetUpdateForm = ({ datasetId }: DatasetUpdateFormProps) => {
   }
 
   // TODO
-  const updateFile = (file?: File) => {
-    if (file) {
-      setFiles([
-        ...fileList,
-        file,
-      ])
-    }
+  const updateFileList = (preparedFiles: any) => {
+    console.log('preparedFiles', preparedFiles)
+    setFiles(preparedFiles)
   }
+  const updateFile = (fileItem: any, progress: number, list: any[]) => {
+    const targetIndex = list.findIndex((file: any) => file.fileID === fileItem.fileID)
+    list[targetIndex] = {
+      ...fileItem,
+      progress,
+    }
+    setFiles(list)
+  }
+
   const updateIndexingTypeCache = (type: string) => {
     setIndexTypeCache(type)
   }
@@ -111,6 +116,7 @@ const DatasetUpdateForm = ({ datasetId }: DatasetUpdateFormProps) => {
           dataSourceTypeDisable={!!detail?.data_source_type}
           changeType={setDataSourceType}
           files={fileList}
+          updateFileList={updateFileList}
           updateFile={updateFile}
           notionPages={notionPages}
           updateNotionPages={updateNotionPages}

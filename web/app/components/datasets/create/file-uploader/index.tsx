@@ -10,8 +10,9 @@ import { ToastContext } from '@/app/components/base/toast'
 import { upload } from '@/service/base'
 
 type IFileUploaderProps = {
-  files: FileEntity[]
-  onFileUpdate: (file?: FileEntity) => void
+  fileList: FileEntity[]
+  prepareFileList: (files: any[]) => void
+  onFileUpdate: (fileItem: any, progress: number, list: any[]) => void
   onPreview: (file: FileEntity) => void
 }
 
@@ -27,9 +28,15 @@ const ACCEPTS = [
   '.csv',
 ]
 
-const MAX_SIZE = 10 * 1024 * 1024
+const MAX_SIZE = 15 * 1024 * 1024
+const BATCH_COUNT = 5
 
-const FileUploader = ({ files, onFileUpdate, onPreview }: IFileUploaderProps) => {
+const FileUploader = ({
+  fileList,
+  prepareFileList,
+  onFileUpdate,
+  onPreview,
+}: IFileUploaderProps) => {
   const { t } = useTranslation()
   const { notify } = useContext(ToastContext)
   const [dragging, setDragging] = useState(false)
@@ -40,6 +47,9 @@ const FileUploader = ({ files, onFileUpdate, onPreview }: IFileUploaderProps) =>
   const [currentFile, setCurrentFile] = useState<File>()
   const [uploading, setUploading] = useState(false)
   const [percent, setPercent] = useState(0)
+
+  // TODO
+  const fileListRef = useRef<any>(null)
 
   // utils
   const getFileType = (currentFile: File) => {
@@ -72,6 +82,7 @@ const FileUploader = ({ files, onFileUpdate, onPreview }: IFileUploaderProps) =>
   const onProgress = useCallback((e: ProgressEvent) => {
     if (e.lengthComputable) {
       const percent = Math.floor(e.loaded / e.total * 100)
+      // updateFileItem
       setPercent(percent)
     }
   }, [setPercent])
@@ -79,43 +90,93 @@ const FileUploader = ({ files, onFileUpdate, onPreview }: IFileUploaderProps) =>
     const currentXHR = uploadPromise.current
     currentXHR.abort()
   }
+  const selectHandle = () => {
+    if (fileUploader.current)
+      fileUploader.current.click()
+  }
   // TODO
-  const fileUpload = async (file?: File) => {
-    if (!file)
-      return
+  const removeFile = () => {
+    if (fileUploader.current)
+      fileUploader.current.value = ''
 
-    if (!isValid(file))
-      return
+    setCurrentFile(undefined)
+    // onFileUpdate()
+  }
 
-    setCurrentFile(file)
-    setUploading(true)
+  const fileUpload = (fileItem: any) => {
+    const fileListCopy = fileListRef.current
     const formData = new FormData()
-    formData.append('file', file)
-    // store for abort
-    const currentXHR = new XMLHttpRequest()
-    uploadPromise.current = currentXHR
-    try {
-      const result = await upload({
-        xhr: currentXHR,
-        data: formData,
-        onprogress: onProgress,
-      }) as FileEntity
-      onFileUpdate(result)
-      setUploading(false)
-    }
-    catch (xhr: any) {
-      setUploading(false)
-      // abort handle
-      if (xhr.readyState === 0 && xhr.status === 0) {
-        if (fileUploader.current)
-          fileUploader.current.value = ''
-
-        setCurrentFile(undefined)
-        return
+    formData.append('file', fileItem.file)
+    const onProgress = (e: ProgressEvent) => {
+      if (e.lengthComputable) {
+        const percent = Math.floor(e.loaded / e.total * 100)
+        onFileUpdate(fileItem, percent, fileListCopy)
       }
-      notify({ type: 'error', message: t('datasetCreation.stepOne.uploader.failed') })
+    }
+    console.log('fff1', fileListCopy)
+
+    return upload({
+      xhr: new XMLHttpRequest(),
+      data: formData,
+      onprogress: onProgress,
+    })
+      .then((res: FileEntity) => {
+        const completeFile = {
+          fileID: fileItem.fileID,
+          file: res,
+        }
+        console.log('fff2', fileListCopy)
+        onFileUpdate(completeFile, 100, fileListCopy)
+        return Promise.resolve({ ...completeFile })
+      })
+      .catch((err) => {
+        console.log(err)
+        notify({ type: 'error', message: t('datasetCreation.stepOne.uploader.failed') })
+        onFileUpdate(fileItem, -2, fileListCopy)
+        return Promise.resolve({ ...fileItem })
+      })
+      .finally()
+  }
+  const uploadBatchFiles = (bFiles: any) => {
+    bFiles.forEach((bf: any) => (bf.progress = 0))
+    return Promise.all(bFiles.map((bFile: any) => fileUpload(bFile)))
+  }
+  const uploadMultipleFiles = async (files: any) => {
+    const length = files.length
+    let start = 0
+    let end = 0
+
+    while (start < length) {
+      if (start + BATCH_COUNT > length)
+        end = length
+      else
+        end = start + BATCH_COUNT
+      const bFiles = files.slice(start, end)
+      await uploadBatchFiles(bFiles)
+      start = end
     }
   }
+  const initialUpload = (files: any) => {
+    if (!files.length)
+      return false
+    const preparedFiles = files.map((file: any, index: number) => {
+      const fileItem = {
+        fileID: `file${index}-${Date.now()}`,
+        file,
+        progress: -1,
+      }
+      return fileItem
+    })
+    prepareFileList(preparedFiles)
+    // TODO fix filelist copy
+    fileListRef.current = preparedFiles
+    uploadMultipleFiles(preparedFiles)
+  }
+  const fileChangeHandle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = [...(e.target.files ?? [])].filter(file => isValid(file))
+    initialUpload(files)
+  }
+
   const handleDragEnter = (e: DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -145,25 +206,6 @@ const FileUploader = ({ files, onFileUpdate, onPreview }: IFileUploaderProps) =>
     }
     onFileUpdate()
     fileUpload(files[0])
-  }
-
-  const selectHandle = () => {
-    if (fileUploader.current)
-      fileUploader.current.click()
-  }
-  // TODO
-  const removeFile = () => {
-    if (fileUploader.current)
-      fileUploader.current.value = ''
-
-    setCurrentFile(undefined)
-    onFileUpdate()
-  }
-  // TODO
-  const fileChangeHandle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const currentFile = e.target.files?.[0]
-    onFileUpdate()
-    fileUpload(currentFile)
   }
 
   useEffect(() => {
@@ -201,6 +243,33 @@ const FileUploader = ({ files, onFileUpdate, onPreview }: IFileUploaderProps) =>
         {dragging && <div ref={dragRef} className={s.draggingCover}/>}
       </div>
       <div className={s.fileList}>
+        {fileList.map(fileItem => (
+          <div
+            // onClick={() => onPreview(currentFile)}
+            className={cn(
+              s.file,
+              fileItem.progress < 100 && s.uploading,
+              // s.active,
+            )}
+          >
+            {fileItem.progress < 100 && (
+              <div className={s.progressbar} style={{ width: `${percent}%` }}/>
+            )}
+            <div className={s.fileInfo}>
+              <div className={cn(s.fileIcon, s[getFileType(fileItem.file)])}/>
+              <div className={s.filename}>{fileItem.file.name}</div>
+              <div className={s.size}>{getFileSize(fileItem.file.size)}</div>
+            </div>
+            <div className={s.actionWrapper}>
+              {fileItem.progress < 100 && (
+                <div className={s.percent}>{`${fileItem.progress}%`}</div>
+              )}
+              {fileItem.progress === 100 && (
+                <div className={s.remove} onClick={removeFile}/>
+              )}
+            </div>
+          </div>
+        ))}
         {currentFile && (
           <div
             // onClick={() => onPreview(currentFile)}
@@ -230,7 +299,7 @@ const FileUploader = ({ files, onFileUpdate, onPreview }: IFileUploaderProps) =>
         )}
       </div>
       {/* TODO */}
-      {!currentFile && files[0] && (
+      {false && !currentFile && fileList[0] && (
         <div
           // onClick={() => onPreview(currentFile)}
           className={cn(
@@ -243,9 +312,9 @@ const FileUploader = ({ files, onFileUpdate, onPreview }: IFileUploaderProps) =>
             <div className={s.progressbar} style={{ width: `${percent}%` }}/>
           )}
           <div className={s.fileInfo}>
-            <div className={cn(s.fileIcon, s[getFileType(files[0])])}/>
-            <div className={s.filename}>{files[0].name}</div>
-            <div className={s.size}>{getFileSize(files[0].size)}</div>
+            <div className={cn(s.fileIcon, s[getFileType(fileList[0])])}/>
+            <div className={s.filename}>{fileList[0].name}</div>
+            <div className={s.size}>{getFileSize(fileList[0].size)}</div>
           </div>
           <div className={s.actionWrapper}>
             {uploading && (

@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import cn from 'classnames'
 import FilePreview from '../file-preview'
@@ -19,8 +19,9 @@ type IStepOneProps = {
   dataSourceTypeDisable: Boolean
   hasConnection: boolean
   onSetting: () => void
-  files: File[]
-  updateFile: (file?: File) => void
+  files: any[]
+  updateFileList: (files: any[]) => void
+  updateFile: (fileItem: any, progress: number, list: any[]) => void
   notionPages?: any[]
   updateNotionPages: (value: any[]) => void
   onStepChange: () => void
@@ -54,6 +55,7 @@ const StepOne = ({
   onSetting,
   onStepChange,
   files,
+  updateFileList,
   updateFile,
   notionPages = [],
   updateNotionPages,
@@ -79,6 +81,17 @@ const StepOne = ({
   const hideNotionPagePreview = () => {
     setCurrentNotionPage(undefined)
   }
+
+  // TODO
+  const nextDisabled = useMemo(() => {
+    if (!files.length)
+      return true
+    console.log(files)
+    console.log(files.some(file => file.progress !== 100))
+    if (files.some(file => file.progress !== 100))
+      return true
+    return false
+  }, [files])
 
   return (
     <div className='flex w-full h-full'>
@@ -131,9 +144,13 @@ const StepOne = ({
           </div>
           {dataSourceType === DataSourceType.FILE && (
             <>
-              <FileUploader onFileUpdate={updateFile} onPreview={updateCurrentFile} files={files} />
-              {/* TODO */}
-              <Button disabled={!files.length} className={s.submitButton} type='primary' onClick={onStepChange}>{t('datasetCreation.stepOne.button')}</Button>
+              <FileUploader
+                fileList={files}
+                prepareFileList={updateFileList}
+                onFileUpdate={updateFile}
+                onPreview={updateCurrentFile}
+              />
+              <Button disabled={nextDisabled} className={s.submitButton} type='primary' onClick={onStepChange}>{t('datasetCreation.stepOne.button')}</Button>
             </>
           )}
           {dataSourceType === DataSourceType.NOTION && (
