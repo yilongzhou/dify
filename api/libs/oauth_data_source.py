@@ -26,10 +26,7 @@ class NotionOAuth(OAuthDataSource):
     _TOKEN_URL = 'https://api.notion.com/v1/oauth/token'
     _NOTION_PAGE_SEARCH = "https://api.notion.com/v1/search"
     _NOTION_BLOCK_SEARCH = "https://api.notion.com/v1/blocks"
-<<<<<<< HEAD
-=======
     _NOTION_BOT_USER = "https://api.notion.com/v1/users/me"
->>>>>>> main
 
     def get_authorization_url(self):
         params = {
@@ -88,8 +85,6 @@ class NotionOAuth(OAuthDataSource):
             db.session.add(new_data_source_binding)
             db.session.commit()
 
-<<<<<<< HEAD
-=======
     def save_internal_access_token(self, access_token: str):
         workspace_name = self.notion_workspace_name(access_token)
         workspace_icon = None
@@ -125,7 +120,6 @@ class NotionOAuth(OAuthDataSource):
             db.session.add(new_data_source_binding)
             db.session.commit()
 
->>>>>>> main
     def sync_data_source(self, binding_id: str):
         # save data source binding
         data_source_binding = DataSourceBinding.query.filter(
@@ -170,14 +164,11 @@ class NotionOAuth(OAuthDataSource):
                     page_name = page_result['properties']['title']['title'][0]['plain_text']
                 else:
                     page_name = 'Untitled'
-<<<<<<< HEAD
-=======
             elif 'Title' in page_result['properties']:
                 if len(page_result['properties']['Title']['title']) > 0:
                     page_name = page_result['properties']['Title']['title'][0]['plain_text']
                 else:
                     page_name = 'Untitled'
->>>>>>> main
             else:
                 page_name = 'Untitled'
             page_icon = page_result['icon']
@@ -267,14 +258,10 @@ class NotionOAuth(OAuthDataSource):
         }
         response = requests.post(url=self._NOTION_PAGE_SEARCH, json=data, headers=headers)
         response_json = response.json()
-<<<<<<< HEAD
-        results = response_json['results']
-=======
         if 'results' in response_json:
             results = response_json['results']
         else:
             results = []
->>>>>>> main
         return results
 
     def notion_block_parent_page_id(self, access_token: str, block_id: str):
@@ -290,8 +277,6 @@ class NotionOAuth(OAuthDataSource):
             return self.notion_block_parent_page_id(access_token, parent[parent_type])
         return parent[parent_type]
 
-<<<<<<< HEAD
-=======
     def notion_workspace_name(self, access_token: str):
         headers = {
             'Authorization': f"Bearer {access_token}",
@@ -306,7 +291,6 @@ class NotionOAuth(OAuthDataSource):
                 return user_info['workspace_name']
         return 'workspace'
 
->>>>>>> main
     def notion_database_search(self, access_token: str):
         data = {
             'filter': {
@@ -321,12 +305,8 @@ class NotionOAuth(OAuthDataSource):
         }
         response = requests.post(url=self._NOTION_PAGE_SEARCH, json=data, headers=headers)
         response_json = response.json()
-<<<<<<< HEAD
-        results = response_json['results']
-=======
         if 'results' in response_json:
             results = response_json['results']
         else:
             results = []
->>>>>>> main
         return results

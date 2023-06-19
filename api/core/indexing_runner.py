@@ -235,29 +235,6 @@ class IndexingRunner:
                 if page['type'] == 'page':
                     page_ids = [page['page_id']]
                     documents = reader.load_data_as_documents(page_ids=page_ids)
-<<<<<<< HEAD
-
-                    processing_rule = DatasetProcessRule(
-                        mode=tmp_processing_rule["mode"],
-                        rules=json.dumps(tmp_processing_rule["rules"])
-                    )
-
-                    # get node parser for splitting
-                    node_parser = self._get_node_parser(processing_rule)
-
-                    # split to nodes
-                    nodes = self._split_to_nodes(
-                        text_docs=documents,
-                        node_parser=node_parser,
-                        processing_rule=processing_rule
-                    )
-                    total_segments += len(nodes)
-                    for node in nodes:
-                        if len(preview_texts) < 5:
-                            preview_texts.append(node.get_text())
-
-                        tokens += TokenCalculator.get_num_tokens(self.embedding_model_name, node.get_text())
-=======
                 elif page['type'] == 'database':
                     documents = reader.load_data_as_documents(database_id=page['page_id'])
                 else:
@@ -282,7 +259,6 @@ class IndexingRunner:
                         preview_texts.append(node.get_text())
 
                     tokens += TokenCalculator.get_num_tokens(self.embedding_model_name, node.get_text())
->>>>>>> main
 
         return {
             "total_segments": total_segments,
@@ -314,10 +290,7 @@ class IndexingRunner:
                 raise ValueError("no notion page found")
             workspace_id = data_source_info['notion_workspace_id']
             page_id = data_source_info['notion_page_id']
-<<<<<<< HEAD
-=======
             page_type = data_source_info['type']
->>>>>>> main
             data_source_binding = DataSourceBinding.query.filter(
                 db.and_(
                     DataSourceBinding.tenant_id == document.tenant_id,
@@ -328,11 +301,6 @@ class IndexingRunner:
             ).first()
             if not data_source_binding:
                 raise ValueError('Data source binding not found.')
-<<<<<<< HEAD
-            # add page last_edited_time to data_source_info
-            self._get_notion_page_last_edited_time(page_id, data_source_binding.access_token, document)
-            text_docs = self._load_data_from_notion(page_id, data_source_binding.access_token)
-=======
             if page_type == 'page':
                 # add page last_edited_time to data_source_info
                 self._get_notion_page_last_edited_time(page_id, data_source_binding.access_token, document)
@@ -341,7 +309,6 @@ class IndexingRunner:
                 # add page last_edited_time to data_source_info
                 self._get_notion_database_last_edited_time(page_id, data_source_binding.access_token, document)
                 text_docs = self._load_database_data_from_notion(page_id, data_source_binding.access_token)
->>>>>>> main
         # update document status to splitting
         self._update_document_index_status(
             document_id=document.id,
@@ -383,24 +350,17 @@ class IndexingRunner:
 
             return text_docs
 
-<<<<<<< HEAD
-    def _load_data_from_notion(self, page_id: str, access_token: str) -> List[Document]:
-=======
     def _load_page_data_from_notion(self, page_id: str, access_token: str) -> List[Document]:
->>>>>>> main
         page_ids = [page_id]
         reader = NotionPageReader(integration_token=access_token)
         text_docs = reader.load_data_as_documents(page_ids=page_ids)
         return text_docs
 
-<<<<<<< HEAD
-=======
     def _load_database_data_from_notion(self, database_id: str, access_token: str) -> List[Document]:
         reader = NotionPageReader(integration_token=access_token)
         text_docs = reader.load_data_as_documents(database_id=database_id)
         return text_docs
 
->>>>>>> main
     def _get_notion_page_last_edited_time(self, page_id: str, access_token: str, document: Document):
         reader = NotionPageReader(integration_token=access_token)
         last_edited_time = reader.get_page_last_edited_time(page_id)
@@ -413,8 +373,6 @@ class IndexingRunner:
         Document.query.filter_by(id=document.id).update(update_params)
         db.session.commit()
 
-<<<<<<< HEAD
-=======
     def _get_notion_database_last_edited_time(self, page_id: str, access_token: str, document: Document):
         reader = NotionPageReader(integration_token=access_token)
         last_edited_time = reader.get_database_last_edited_time(page_id)
@@ -427,7 +385,6 @@ class IndexingRunner:
         Document.query.filter_by(id=document.id).update(update_params)
         db.session.commit()
 
->>>>>>> main
     def _get_node_parser(self, processing_rule: DatasetProcessRule) -> NodeParser:
         """
         Get the NodeParser object according to the processing rule.
