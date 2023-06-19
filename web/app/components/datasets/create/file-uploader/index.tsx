@@ -14,6 +14,7 @@ type IFileUploaderProps = {
   prepareFileList: (files: any[]) => void
   onFileUpdate: (fileItem: any, progress: number, list: any[]) => void
   onPreview: (file: FileEntity) => void
+  titleClassName?: string
 }
 
 const ACCEPTS = [
@@ -36,6 +37,7 @@ const FileUploader = ({
   prepareFileList,
   onFileUpdate,
   onPreview,
+  titleClassName,
 }: IFileUploaderProps) => {
   const { t } = useTranslation()
   const { notify } = useContext(ToastContext)
@@ -232,7 +234,7 @@ const FileUploader = ({
         accept={ACCEPTS.join(',')}
         onChange={fileChangeHandle}
       />
-      <div className={s.title}>{t('datasetCreation.stepOne.uploader.title')}</div>
+      <div className={cn(s.title, titleClassName)}>{t('datasetCreation.stepOne.uploader.title')}</div>
       <div ref={dropRef} className={cn(s.uploader, dragging && s.dragging)}>
         <div className='flex justify-center items-center h-6 mb-2'>
           <span className={s.uploadIcon}/>

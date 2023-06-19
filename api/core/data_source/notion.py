@@ -1,4 +1,8 @@
 """Notion reader."""
+<<<<<<< HEAD
+=======
+import json
+>>>>>>> main
 import logging
 import os
 from datetime import datetime
@@ -14,6 +18,10 @@ BLOCK_CHILD_URL_TMPL = "https://api.notion.com/v1/blocks/{block_id}/children"
 DATABASE_URL_TMPL = "https://api.notion.com/v1/databases/{database_id}/query"
 SEARCH_URL = "https://api.notion.com/v1/search"
 RETRIEVE_PAGE_URL_TMPL = "https://api.notion.com/v1/pages/{page_id}"
+<<<<<<< HEAD
+=======
+RETRIEVE_DATABASE_URL_TMPL = "https://api.notion.com/v1/databases/{database_id}"
+>>>>>>> main
 HEADING_TYPE = ['heading_1', 'heading_2', 'heading_3']
 logger = logging.getLogger(__name__)
 
@@ -58,7 +66,11 @@ class NotionPageReader(BaseReader):
                 "GET", block_url, headers=self.headers, json=query_dict
             )
             data = res.json()
+<<<<<<< HEAD
             if data["results"] is None:
+=======
+            if 'results' not in data or data["results"] is None:
+>>>>>>> main
                 done = True
                 break
             heading = ''
@@ -82,7 +94,12 @@ class NotionPageReader(BaseReader):
                                     heading = text
                     result_block_id = result["id"]
                     has_children = result["has_children"]
+<<<<<<< HEAD
                     if has_children:
+=======
+                    block_type = result["type"]
+                    if has_children and block_type != 'child_page':
+>>>>>>> main
                         children_text = self._read_block(
                             result_block_id, num_tabs=num_tabs + 1
                         )
@@ -182,7 +199,12 @@ class NotionPageReader(BaseReader):
 
                     result_block_id = result["id"]
                     has_children = result["has_children"]
+<<<<<<< HEAD
                     if has_children:
+=======
+                    block_type = result["type"]
+                    if has_children and block_type != 'child_page':
+>>>>>>> main
                         children_text = self._read_block(
                             result_block_id, num_tabs=num_tabs + 1
                         )
@@ -210,6 +232,50 @@ class NotionPageReader(BaseReader):
         """Read a page as documents."""
         return self._read_parent_blocks(page_id)
 
+<<<<<<< HEAD
+=======
+    def query_database_data(
+            self, database_id: str, query_dict: Dict[str, Any] = {}
+    ) -> str:
+        """Get all the pages from a Notion database."""
+        res = requests.post\
+                (
+            DATABASE_URL_TMPL.format(database_id=database_id),
+            headers=self.headers,
+            json=query_dict,
+        )
+        data = res.json()
+        database_content_list = []
+        if 'results' not in data or data["results"] is None:
+            return ""
+        for result in data["results"]:
+            properties = result['properties']
+            data = {}
+            for property_name, property_value in properties.items():
+                type = property_value['type']
+                if type == 'multi_select':
+                    value = []
+                    multi_select_list = property_value[type]
+                    for multi_select in multi_select_list:
+                        value.append(multi_select['name'])
+                elif type == 'rich_text' or type == 'title':
+                    if len(property_value[type]) > 0:
+                        value = property_value[type][0]['plain_text']
+                    else:
+                        value = ''
+                elif type == 'select' or type == 'status':
+                    if property_value[type]:
+                        value = property_value[type]['name']
+                    else:
+                        value = ''
+                else:
+                    value = property_value[type]
+                data[property_name] = value
+            database_content_list.append(json.dumps(data))
+
+        return "\n\n".join(database_content_list)
+
+>>>>>>> main
     def query_database(
             self, database_id: str, query_dict: Dict[str, Any] = {}
     ) -> List[str]:
@@ -288,10 +354,15 @@ class NotionPageReader(BaseReader):
         docs = []
         if database_id is not None:
             # get all the pages in the database
+<<<<<<< HEAD
             page_ids = self.query_database(database_id)
             for page_id in page_ids:
                 page_text = self.read_page(page_id)
                 docs.append(Document(page_text))
+=======
+            page_text = self.query_database_data(database_id)
+            docs.append(Document(page_text))
+>>>>>>> main
         else:
             for page_id in page_ids:
                 page_text_list = self.read_page_as_documents(page_id)
@@ -308,7 +379,20 @@ class NotionPageReader(BaseReader):
             "GET", retrieve_page_url, headers=self.headers, json=query_dict
         )
         data = res.json()
+<<<<<<< HEAD
         # last_edited_time = datetime.fromisoformat(data["last_edited_time"])
+=======
+        return data["last_edited_time"]
+
+    def get_database_last_edited_time(self, database_id: str) -> str:
+        retrieve_page_url = RETRIEVE_DATABASE_URL_TMPL.format(database_id=database_id)
+        query_dict: Dict[str, Any] = {}
+
+        res = requests.request(
+            "GET", retrieve_page_url, headers=self.headers, json=query_dict
+        )
+        data = res.json()
+>>>>>>> main
         return data["last_edited_time"]
 
 

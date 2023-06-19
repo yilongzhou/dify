@@ -79,7 +79,7 @@ class Config:
         self.CONSOLE_URL = get_env('CONSOLE_URL')
         self.API_URL = get_env('API_URL')
         self.APP_URL = get_env('APP_URL')
-        self.CURRENT_VERSION = "0.3.3"
+        self.CURRENT_VERSION = "0.3.4"
         self.COMMIT_SHA = get_env('COMMIT_SHA')
         self.EDITION = "SELF_HOSTED"
         self.DEPLOY_ENV = get_env('DEPLOY_ENV')
@@ -190,6 +190,9 @@ class Config:
         # notion import setting
         self.NOTION_CLIENT_ID = get_env('NOTION_CLIENT_ID')
         self.NOTION_CLIENT_SECRET = get_env('NOTION_CLIENT_SECRET')
+        self.NOTION_INTEGRATION_TYPE = get_env('NOTION_INTEGRATION_TYPE')
+        self.NOTION_INTERNAL_SECRET = get_env('NOTION_INTERNAL_SECRET')
+
 
 class CloudEditionConfig(Config):
 
