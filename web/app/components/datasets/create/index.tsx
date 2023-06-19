@@ -50,7 +50,7 @@ const DatasetUpdateForm = ({ datasetId }: DatasetUpdateFormProps) => {
       ...fileItem,
       progress,
     }
-    setFiles(list)
+    setFiles([...list])
   }
 
   const updateIndexingTypeCache = (type: string) => {
