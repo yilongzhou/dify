@@ -4,7 +4,7 @@ FROM python:3.10-slim AS base
 LABEL maintainer="takatost@gmail.com"
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc \
+    && apt-get install -y --no-install-recommends gcc gcc g++ python3-dev libc-dev libffi-dev \
     && apt-get autoremove \
     && rm -rf /var/lib/apt/lists/*
 
@@ -29,7 +29,7 @@ EXPOSE 5001
 WORKDIR /app/api
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends bash curl wget vim gcc g++ python3-dev libc-dev libffi-dev nodejs \
+    && apt-get install -y --no-install-recommends bash curl wget vim nodejs \
     && apt-get autoremove \
     && rm -rf /var/lib/apt/lists/*
 
