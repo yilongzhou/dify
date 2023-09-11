@@ -94,7 +94,8 @@ class DatasetRetrieverTool(BaseTool):
                     query,
                     search_type='similarity_score_threshold',
                     search_kwargs={
-                        'k': self.k
+                        'k': self.k,
+                        'score_threshold': 0.8
                     }
                 )
             else:
