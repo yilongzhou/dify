@@ -1,8 +1,8 @@
 from typing import List, Tuple, Any, Union, Sequence, Optional
 
 from langchain.agents import OpenAIFunctionsAgent, BaseSingleActionAgent
-from langchain.agents.openai_functions_agent.base import _parse_ai_message, \
-    _format_intermediate_steps
+from langchain.agents.format_scratchpad import format_to_openai_functions
+from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
 from langchain.callbacks.base import BaseCallbackManager
 from langchain.callbacks.manager import Callbacks
 from langchain.chat_models.openai import _convert_message_to_dict, _import_tiktoken
@@ -94,6 +94,7 @@ class AutoSummarizingOpenAIFunctionCallAgent(OpenAIFunctionsAgent, CalcTokenMixi
             self,
             intermediate_steps: List[Tuple[AgentAction, str]],
             callbacks: Callbacks = None,
+            with_functions: bool = True,
             **kwargs: Any,
     ) -> Union[AgentAction, AgentFinish]:
         """Given input, decided what to do.
@@ -105,7 +106,7 @@ class AutoSummarizingOpenAIFunctionCallAgent(OpenAIFunctionsAgent, CalcTokenMixi
         Returns:
             Action specifying what tool to use.
         """
-        agent_scratchpad = _format_intermediate_steps(intermediate_steps)
+        agent_scratchpad = format_to_openai_functions(intermediate_steps)
         selected_inputs = {
             k: kwargs[k] for k in self.prompt.input_variables if k != "agent_scratchpad"
         }

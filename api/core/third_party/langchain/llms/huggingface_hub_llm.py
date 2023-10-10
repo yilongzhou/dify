@@ -1,9 +1,8 @@
 from typing import Dict, Optional, List, Any
 
 from huggingface_hub import HfApi, InferenceApi
-from langchain import HuggingFaceHub
 from langchain.callbacks.manager import CallbackManagerForLLMRun
-from langchain.llms.huggingface_hub import VALID_TASKS
+from langchain.llms.huggingface_hub import VALID_TASKS, HuggingFaceHub
 from pydantic import root_validator
 
 from langchain.utils import get_from_dict_or_env

@@ -4,9 +4,9 @@ import time
 
 from typing import Any, Dict, List, Union, Optional
 
-from langchain.agents import openai_functions_agent, openai_functions_multi_agent
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import AgentAction, AgentFinish, LLMResult, ChatGeneration, BaseMessage
+from langchain.schema.agent import AgentActionMessageLog
 
 from core.callback_handler.entity.agent_loop import AgentLoop
 from core.conversation_message_task import ConversationMessageTask
@@ -134,8 +134,8 @@ class AgentLoopGatherCallbackHandler(BaseCallbackHandler):
         tool_input = json.dumps({"query": action.tool_input}
                                 if isinstance(action.tool_input, str) else action.tool_input)
         completion = None
-        if isinstance(action, openai_functions_agent.base._FunctionsAgentAction) \
-                or isinstance(action, openai_functions_multi_agent.base._FunctionsAgentAction):
+        if (isinstance(action, AgentActionMessageLog) and len(action.message_log) > 0
+                and 'function_call' in action.message_log[0].additional_kwargs):
             thought = action.log.strip()
             completion = json.dumps({'function_call': action.message_log[0].additional_kwargs['function_call']})
         else:

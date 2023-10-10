@@ -1,4 +1,4 @@
-from langchain import SerpAPIWrapper
+from langchain.utilities.serpapi import SerpAPIWrapper
 from pydantic import Field, BaseModel
 
 

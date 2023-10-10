@@ -1,5 +1,3 @@
-import decimal
-from functools import wraps
 from typing import List, Optional, Any
 
 from langchain.callbacks.manager import Callbacks
@@ -29,7 +27,7 @@ class ReplicateModel(BaseLLM):
 
         return EnhanceReplicate(
             model=self.name + ':' + self.credentials.get('model_version'),
-            input=provider_model_kwargs,
+            model_kwargs=provider_model_kwargs,
             streaming=self.streaming,
             replicate_api_token=self.credentials.get('replicate_api_token'),
             callbacks=self.callbacks,
@@ -60,9 +58,9 @@ class ReplicateModel(BaseLLM):
 
         # The maximum length the generated tokens can have.
         # Corresponds to the length of the input prompt + max_new_tokens.
-        if 'max_length' in self._client.input:
-            self._client.input['max_length'] = min(
-                self._client.input['max_length'] + self.get_num_tokens(messages),
+        if 'max_length' in self._client.model_kwargs:
+            self._client.model_kwargs['max_length'] = min(
+                self._client.model_kwargs['max_length'] + self.get_num_tokens(messages),
                 self.model_rules.max_tokens.max
             )
 
@@ -83,7 +81,7 @@ class ReplicateModel(BaseLLM):
 
     def _set_model_kwargs(self, model_kwargs: ModelKwargs):
         provider_model_kwargs = self._to_model_kwargs_input(self.model_rules, model_kwargs)
-        self.client.input = provider_model_kwargs
+        self.client.model_kwargs = provider_model_kwargs
 
     def handle_exceptions(self, ex: Exception) -> Exception:
         if isinstance(ex, (ModelError, ReplicateError)):

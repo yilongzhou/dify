@@ -47,7 +47,7 @@ class EnhanceReplicate(Replicate):
             key=lambda item: item[1].get("x-order", 0),
         )
         first_input_name = input_properties[0][0]
-        inputs = {first_input_name: prompt, **self.input}
+        inputs = {first_input_name: prompt, **self.model_kwargs}
 
         prediction = client.predictions.create(
             version=version, input={**inputs, **kwargs}

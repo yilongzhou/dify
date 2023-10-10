@@ -1,6 +1,7 @@
 from typing import Dict
 
 from langchain.chat_models import ChatAnthropic
+from langchain.llms.anthropic import _to_secret
 from langchain.schema import ChatMessage, BaseMessage, HumanMessage, AIMessage, SystemMessage
 from langchain.utils import get_from_dict_or_env, check_package_version
 from pydantic import root_validator
@@ -10,8 +11,8 @@ class AnthropicLLM(ChatAnthropic):
     @root_validator()
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate that api key and python package exists in environment."""
-        values["anthropic_api_key"] = get_from_dict_or_env(
-            values, "anthropic_api_key", "ANTHROPIC_API_KEY"
+        values["anthropic_api_key"] = _to_secret(
+            get_from_dict_or_env(values, "anthropic_api_key", "ANTHROPIC_API_KEY")
         )
         # Get custom api url from environment.
         values["anthropic_api_url"] = get_from_dict_or_env(
@@ -27,13 +28,13 @@ class AnthropicLLM(ChatAnthropic):
             check_package_version("anthropic", gte_version="0.3")
             values["client"] = anthropic.Anthropic(
                 base_url=values["anthropic_api_url"],
-                api_key=values["anthropic_api_key"],
+                api_key=values["anthropic_api_key"].get_secret_value(),
                 timeout=values["default_request_timeout"],
                 max_retries=0
             )
             values["async_client"] = anthropic.AsyncAnthropic(
                 base_url=values["anthropic_api_url"],
-                api_key=values["anthropic_api_key"],
+                api_key=values["anthropic_api_key"].get_secret_value(),
                 timeout=values["default_request_timeout"],
             )
             values["HUMAN_PROMPT"] = anthropic.HUMAN_PROMPT

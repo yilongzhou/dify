@@ -1,8 +1,8 @@
 from typing import Dict, Any, Optional, List, Tuple, Union
 
+from langchain.adapters.openai import convert_dict_to_message
 from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.chat_models import AzureChatOpenAI
-from langchain.chat_models.openai import _convert_dict_to_message
 from langchain.schema import ChatResult, BaseMessage, ChatGeneration
 from pydantic import root_validator
 
@@ -79,7 +79,7 @@ class EnhanceAzureChatOpenAI(AzureChatOpenAI):
                             function_call["arguments"] += _function_call["arguments"]
                     if run_manager:
                         run_manager.on_llm_new_token(token)
-            message = _convert_dict_to_message(
+            message = convert_dict_to_message(
                 {
                     "content": inner_completion,
                     "role": role,

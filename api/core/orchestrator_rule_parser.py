@@ -2,11 +2,10 @@ import json
 import threading
 from typing import Optional, List
 
-from flask import Flask
-from langchain import WikipediaAPIWrapper
 from langchain.callbacks.manager import Callbacks
 from langchain.memory.chat_memory import BaseChatMemory
 from langchain.tools import BaseTool, Tool, WikipediaQueryRun
+from langchain.utilities.wikipedia import WikipediaAPIWrapper
 from pydantic import BaseModel, Field
 
 from core.agent.agent.multi_dataset_router_agent import MultiDatasetRouterAgent

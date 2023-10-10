@@ -1,7 +1,6 @@
 import re
 from typing import List, Tuple, Any, Union, Sequence, Optional, cast
 
-from langchain import BasePromptTemplate, PromptTemplate
 from langchain.agents import StructuredChatAgent, AgentOutputParser, Agent
 from langchain.agents.structured_chat.base import HUMAN_MESSAGE_TEMPLATE
 from langchain.callbacks.base import BaseCallbackManager
@@ -9,7 +8,7 @@ from langchain.callbacks.manager import Callbacks
 from langchain.memory.prompt import SUMMARY_PROMPT
 from langchain.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
 from langchain.schema import AgentAction, AgentFinish, AIMessage, HumanMessage, OutputParserException, BaseMessage, \
-    get_buffer_string
+    get_buffer_string, BasePromptTemplate
 from langchain.tools import BaseTool
 from langchain.agents.structured_chat.prompt import PREFIX, SUFFIX
 
