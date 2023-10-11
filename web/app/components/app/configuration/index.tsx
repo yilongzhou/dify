@@ -109,20 +109,6 @@ const Configuration: FC = () => {
     doSetModelConfig(newModelConfig)
   }
 
-  const setModel = ({
-    id: modelId,
-    provider,
-    mode,
-  }: { id: string; provider: ProviderEnum; mode: ModelModeType }) => {
-    const newModelConfig = produce(modelConfig, (draft) => {
-      draft.provider = provider
-      draft.model_id = modelId
-      draft.mode = mode
-    })
-
-    setModelConfig(newModelConfig)
-  }
-
   const modelModeType = modelConfig.mode
 
   const [dataSets, setDataSets] = useState<DataSet[]>([])
@@ -201,10 +187,10 @@ const Configuration: FC = () => {
   const [promptMode, doSetPromptMode] = useState(PromptMode.advanced)
   const isAdvancedMode = promptMode === PromptMode.advanced
   const [canReturnToSimpleMode, setCanReturnToSimpleMode] = useState(true)
-  const setPromptMode = (mode: PromptMode) => {
+  const setPromptMode = async (mode: PromptMode) => {
     if (mode === PromptMode.advanced) {
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      migrateToDefaultPrompt()
+      await migrateToDefaultPrompt()
       setCanReturnToSimpleMode(true)
     }
 
@@ -227,7 +213,46 @@ const Configuration: FC = () => {
     promptMode,
     modelModeType,
     prePrompt: modelConfig.configs.prompt_template,
+    onUserChangedPrompt: () => {
+      setCanReturnToSimpleMode(false)
+    },
   })
+
+  const setModel = async ({
+    id: modelId,
+    provider,
+    mode: modeMode,
+  }: { id: string; provider: ProviderEnum; mode: ModelModeType }) => {
+    if (isAdvancedMode) {
+      const appMode = mode
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      const published = await handlePublish(true)
+      if (!published)
+        return
+
+      if (modeMode === ModelModeType.completion) {
+        if (appMode === AppType.chat) {
+          if (!completionPromptConfig.prompt.text || !completionPromptConfig.conversation_histories_role.assistant_prefix || !completionPromptConfig.conversation_histories_role.user_prefix)
+            await migrateToDefaultPrompt(true, ModelModeType.completion)
+        }
+        else {
+          if (!completionPromptConfig.prompt.text)
+            await migrateToDefaultPrompt(true, ModelModeType.completion)
+        }
+      }
+      if (modeMode === ModelModeType.chat) {
+        if (chatPromptConfig.prompt.length === 0)
+          await migrateToDefaultPrompt(true, ModelModeType.chat)
+      }
+    }
+    const newModelConfig = produce(modelConfig, (draft) => {
+      draft.provider = provider
+      draft.model_id = modelId
+      draft.mode = modeMode
+    })
+
+    setModelConfig(newModelConfig)
+  }
 
   useEffect(() => {
     fetchAppDetail({ url: '/apps', id: appId }).then(async (res) => {
@@ -291,10 +316,34 @@ const Configuration: FC = () => {
     })
   }, [appId])
 
-  const cannotPublish = mode === AppType.completion && !modelConfig.configs.prompt_template
-  const promptEmpty = mode === AppType.completion && !modelConfig.configs.prompt_template
+  const promptEmpty = (() => {
+    if (mode === AppType.chat)
+      return false
+
+    if (isAdvancedMode)
+      return !completionPromptConfig.prompt.text
+
+    else
+      return !modelConfig.configs.prompt_template
+  })()
+  const cannotPublish = (() => {
+    if (mode === AppType.chat) {
+      if (!isAdvancedMode)
+        return false
+
+      if (modelModeType === ModelModeType.completion) {
+        if (!hasSetBlockStatus.history || !hasSetBlockStatus.query)
+          return true
+
+        return false
+      }
+
+      return false
+    }
+    else { return promptEmpty }
+  })()
   const contextVarEmpty = mode === AppType.completion && dataSets.length > 0 && !hasSetContextVar
-  const handlePublish = async () => {
+  const handlePublish = async (isSilence?: boolean) => {
     const modelId = modelConfig.model_id
     const promptTemplate = modelConfig.configs.prompt_template
     const promptVariables = modelConfig.configs.prompt_variables
@@ -302,6 +351,16 @@ const Configuration: FC = () => {
     if (promptEmpty) {
       notify({ type: 'error', message: t('appDebug.otherError.promptNoBeEmpty'), duration: 3000 })
       return
+    }
+    if (isAdvancedMode && mode === AppType.chat && modelModeType === ModelModeType.completion) {
+      if (!hasSetBlockStatus.history) {
+        notify({ type: 'error', message: t('appDebug.otherError.historyNoBeEmpty'), duration: 3000 })
+        return
+      }
+      if (!hasSetBlockStatus.query) {
+        notify({ type: 'error', message: t('appDebug.otherError.queryNoBeEmpty'), duration: 3000 })
+        return
+      }
     }
     if (contextVarEmpty) {
       notify({ type: 'error', message: t('appDebug.feature.dataSet.queryVariable.contextVarNotEmpty'), duration: 3000 })
@@ -359,8 +418,11 @@ const Configuration: FC = () => {
       modelConfig: newModelConfig,
       completionParams,
     })
-    notify({ type: 'success', message: t('common.api.success'), duration: 3000 })
+    if (!isSilence)
+      notify({ type: 'success', message: t('common.api.success'), duration: 3000 })
+
     setCanReturnToSimpleMode(false)
+    return true
   }
 
   const [showConfirm, setShowConfirm] = useState(false)
@@ -439,7 +501,8 @@ const Configuration: FC = () => {
               <div className='italic text-base font-bold text-gray-900 leading-[18px]'>{t('appDebug.pageTitle.line1')}</div>
               <div className='flex items-center h-6 space-x-1 text-xs'>
                 <div className='text-gray-500 font-medium italic'>{t('appDebug.pageTitle.line2')}</div>
-                {!isAdvancedMode && (
+                {/* modelModeType missing can not load template */}
+                {(!isAdvancedMode && modelModeType) && (
                   <div
                     onClick={() => setPromptMode(PromptMode.advanced)}
                     className={'cursor-pointer text-indigo-600'}
@@ -480,7 +543,7 @@ const Configuration: FC = () => {
               />
               <div className='mx-3 w-[1px] h-[14px] bg-gray-200'></div>
               <Button onClick={() => setShowConfirm(true)} className='shrink-0 mr-2 w-[70px] !h-8 !text-[13px] font-medium'>{t('appDebug.operation.resetConfig')}</Button>
-              <Button type='primary' onClick={handlePublish} className={cn(cannotPublish && '!bg-primary-200 !cursor-not-allowed', 'shrink-0 w-[70px] !h-8 !text-[13px] font-medium')}>{t('appDebug.operation.applyConfig')}</Button>
+              <Button type='primary' onClick={() => handlePublish(false)} className={cn(cannotPublish && '!bg-primary-200 !cursor-not-allowed', 'shrink-0 w-[70px] !h-8 !text-[13px] font-medium')}>{t('appDebug.operation.applyConfig')}</Button>
             </div>
           </div>
           <div className='flex grow h-[200px]'>

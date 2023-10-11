@@ -3,7 +3,7 @@ import { clone } from 'lodash-es'
 import produce from 'immer'
 import type { ChatPromptConfig, CompletionPromptConfig, ConversationHistoriesRole, PromptItem } from '@/models/debug'
 import { PromptMode } from '@/models/debug'
-import { ModelModeType } from '@/types/app'
+import { AppType, ModelModeType } from '@/types/app'
 import { DEFAULT_CHAT_PROMPT_CONFIG, DEFAULT_COMPLETION_PROMPT_CONFIG } from '@/config'
 import { PRE_PROMPT_PLACEHOLDER_TEXT, checkHasContextBlock, checkHasHistoryBlock, checkHasQueryBlock } from '@/app/components/base/prompt-editor/constants'
 import { fetchPromptTemplate } from '@/service/debug'
@@ -14,6 +14,7 @@ type Param = {
   modelName: string
   promptMode: PromptMode
   prePrompt: string
+  onUserChangedPrompt: () => void
 }
 
 const useAdvancedPromptConfig = ({
@@ -22,6 +23,7 @@ const useAdvancedPromptConfig = ({
   modelName,
   promptMode,
   prePrompt,
+  onUserChangedPrompt,
 }: Param) => {
   const isAdvancedPrompt = promptMode === PromptMode.advanced
   const [chatPromptConfig, setChatPromptConfig] = useState<ChatPromptConfig>(clone(DEFAULT_CHAT_PROMPT_CONFIG))
@@ -34,7 +36,7 @@ const useAdvancedPromptConfig = ({
     return (modelModeType === ModelModeType.chat) ? chatPromptConfig.prompt : completionPromptConfig.prompt
   })()
 
-  const setCurrentAdvancedPrompt = (prompt: PromptItem | PromptItem[]) => {
+  const setCurrentAdvancedPrompt = (prompt: PromptItem | PromptItem[], isUserChanged?: boolean) => {
     if (!isAdvancedPrompt)
       return
 
@@ -50,6 +52,8 @@ const useAdvancedPromptConfig = ({
         prompt: prompt as PromptItem,
       })
     }
+    if (isUserChanged)
+      onUserChangedPrompt()
   }
 
   const setConversationHistoriesRole = (conversationHistoriesRole: ConversationHistoriesRole) => {
@@ -88,7 +92,7 @@ const useAdvancedPromptConfig = ({
   * 1. migrate prompt
   * 2. change promptMode to advanced
   */
-  const migrateToDefaultPrompt = async (isMigrateToCompetition?: boolean) => {
+  const migrateToDefaultPrompt = async (isMigrateToCompetition?: boolean, toModelModeType?: ModelModeType) => {
     const mode = modelModeType
     if (!isAdvancedPrompt) {
       const { chat_prompt_config, completion_prompt_config } = await fetchPromptTemplate({
@@ -118,12 +122,25 @@ const useAdvancedPromptConfig = ({
     }
 
     if (isMigrateToCompetition) {
-      const { completion_prompt_config } = await fetchPromptTemplate({
+      const { completion_prompt_config, chat_prompt_config } = await fetchPromptTemplate({
         appMode,
-        mode: ModelModeType.completion,
+        mode: toModelModeType as ModelModeType,
         modelName,
       })
-      setCompletionPromptConfig(completion_prompt_config)
+
+      if (toModelModeType === ModelModeType.completion) {
+        const newPromptConfig = produce(completion_prompt_config, (draft) => {
+          if (!draft.prompt.text)
+            draft.prompt.text = completion_prompt_config.prompt.text
+
+          if (appMode === AppType.chat && (!draft.conversation_histories_role.assistant_prefix || !draft.conversation_histories_role.user_prefix))
+            draft.conversation_histories_role = completionPromptConfig.conversation_histories_role
+        })
+        setCompletionPromptConfig(newPromptConfig)
+      }
+      else {
+        setChatPromptConfig(chat_prompt_config)
+      }
     }
   }
 
