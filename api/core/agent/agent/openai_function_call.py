@@ -1,11 +1,12 @@
 from typing import List, Tuple, Any, Union, Sequence, Optional
 
+from langchain.adapters.openai import convert_message_to_dict
 from langchain.agents import OpenAIFunctionsAgent, BaseSingleActionAgent
 from langchain.agents.format_scratchpad import format_to_openai_functions
 from langchain.agents.output_parsers import OpenAIFunctionsAgentOutputParser
 from langchain.callbacks.base import BaseCallbackManager
 from langchain.callbacks.manager import Callbacks
-from langchain.chat_models.openai import _convert_message_to_dict, _import_tiktoken
+from langchain.chat_models.openai import _import_tiktoken
 from langchain.memory.prompt import SUMMARY_PROMPT
 from langchain.prompts.chat import BaseMessagePromptTemplate
 from langchain.schema import AgentAction, AgentFinish, SystemMessage, AIMessage, HumanMessage, BaseMessage, \
@@ -249,15 +250,16 @@ class AutoSummarizingOpenAIFunctionCallAgent(OpenAIFunctionsAgent, CalcTokenMixi
             )
         num_tokens = 0
         for m in messages:
-            message = _convert_message_to_dict(m)
+            message = convert_message_to_dict(m)
             num_tokens += tokens_per_message
             for key, value in message.items():
-                if key == "function_call":
-                    for f_key, f_value in value.items():
-                        num_tokens += len(encoding.encode(f_key))
-                        num_tokens += len(encoding.encode(f_value))
-                else:
-                    num_tokens += len(encoding.encode(value))
+                if value is not None:
+                    if key == "function_call":
+                        for f_key, f_value in value.items():
+                            num_tokens += len(encoding.encode(f_key))
+                            num_tokens += len(encoding.encode(f_value))
+                    else:
+                        num_tokens += len(encoding.encode(value))
 
                 if key == "name":
                     num_tokens += tokens_per_name

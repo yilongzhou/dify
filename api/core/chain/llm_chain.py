@@ -1,6 +1,6 @@
 from typing import List, Dict, Any, Optional
 
-from langchain import LLMChain as LCLLMChain
+from langchain.chains.llm import LLMChain as LCLLMChain
 from langchain.callbacks.manager import CallbackManagerForChainRun
 from langchain.schema import LLMResult, Generation
 from langchain.schema.language_model import BaseLanguageModel
