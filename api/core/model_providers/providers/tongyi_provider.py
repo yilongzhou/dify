@@ -26,10 +26,12 @@ class TongyiProvider(BaseModelProvider):
                 {
                     'id': 'qwen-turbo',
                     'name': 'qwen-turbo',
+                    'mode': ModelMode.COMPLETION.value,
                 },
                 {
                     'id': 'qwen-plus',
                     'name': 'qwen-plus',
+                    'mode': ModelMode.COMPLETION.value,
                 }
             ]
         else:
