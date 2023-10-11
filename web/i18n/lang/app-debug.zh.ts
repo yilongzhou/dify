@@ -1,5 +1,22 @@
 const translation = {
-  pageTitle: '提示词编排',
+  pageTitle: {
+    line1: '提示词',
+    line2: '编排',
+  },
+  promptMode: {
+    simple: '切换到高级模式以编辑内置的提示词',
+    advanced: '高级模式',
+    switchBack: '切换回去',
+    advancedWarning: {
+      title: '您已切换到高级模式，一旦修改提示词，将无法返回简单模式。',
+      description: '在高级模式下，您可以编辑内置的提示词。',
+      learnMore: '了解更多',
+      ok: '确定',
+    },
+    operation: {
+      addMessage: '添加消息',
+    },
+  },
   operation: {
     applyConfig: '发布',
     resetConfig: '重置',
@@ -78,6 +95,17 @@ const translation = {
         contextVarNotEmpty: '上下文查询变量不能为空',
         deleteContextVarTitle: '删除变量“{{varName}}”？',
         deleteContextVarTip: '该变量已被设置为上下文查询变量，删除该变量将影响数据集的正常使用。 如果您仍需要删除它，请在上下文部分中重新选择它。',
+      },
+    },
+    conversationHistory: {
+      title: '对话历史',
+      description: '设置对话角色的前缀名称',
+      tip: '对话历史未启用，请在上面的提示中添加<histories>。',
+      learnMore: '了解更多',
+      editModal: {
+        title: '编辑对话角色名称',
+        userPrefix: '用户前缀',
+        assistantPrefix: '助手前缀',
       },
     },
   },
@@ -182,6 +210,13 @@ const translation = {
     run: '运行',
   },
   result: '结果',
+  datasetConfig: {
+    params: '参数设置',
+    top_k: 'Top K',
+    top_kTip: '用于筛选与用户问题相似度最高的文本片段。系统同时会根据选用模型上下文窗口大小动态调整分段数量。',
+    score_threshold: 'Score 阈值',
+    score_thresholdTip: '用于设置文本片段筛选的相似度阈值。',
+  },
 }
 
 export default translation

@@ -9,14 +9,15 @@ import {
   InformationCircleIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { SparklesIcon } from '@heroicons/react/24/solid'
 import { get } from 'lodash-es'
 import InfiniteScroll from 'react-infinite-scroll-component'
 import dayjs from 'dayjs'
 import { createContext, useContext } from 'use-context-selector'
 import classNames from 'classnames'
 import { useTranslation } from 'react-i18next'
+import cn from 'classnames'
 import s from './style.module.css'
+import VarPanel from './var-panel'
 import { randomString } from '@/utils'
 import { EditIconSolid } from '@/app/components/app/chat/icon-component'
 import type { FeedbackFunc, Feedbacktype, IChatItem, SubmitAnnotationFunc } from '@/app/components/app/chat/type'
@@ -32,6 +33,8 @@ import { fetchChatConversationDetail, fetchChatMessages, fetchCompletionConversa
 import { TONE_LIST } from '@/config'
 import ModelIcon from '@/app/components/app/configuration/config-model/model-icon'
 import ModelName from '@/app/components/app/configuration/config-model/model-name'
+import ModelModeTypeLabel from '@/app/components/app/configuration/config-model/model-mode-type-label'
+import { ModelModeType } from '@/types/app'
 
 type IConversationList = {
   logs?: ChatConversationsResponse | CompletionConversationsResponse
@@ -161,6 +164,15 @@ function DetailPanel<T extends ChatConversationFullDetailResponse | CompletionCo
     return res
   })?.name ?? 'custom'
 
+  const modelName = (detail.model_config as any).model.name
+  const provideName = (detail.model_config as any).model.provider as any
+  const varList = (detail.model_config as any).user_input_form.map((item) => {
+    const itemContent = item[Object.keys(item)[0]]
+    return {
+      label: itemContent.label,
+      value: 'Value ...', // wait for api
+    }
+  })
   return (<div className='rounded-xl border-[0.5px] border-gray-200 h-full flex flex-col overflow-auto'>
     {/* Panel Header */}
     <div className='border-b border-gray-100 py-4 px-6 flex items-center justify-between'>
@@ -175,6 +187,19 @@ function DetailPanel<T extends ChatConversationFullDetailResponse | CompletionCo
           providerName={detail.model_config.model.provider}
         />
         <ModelName modelId={detail.model_config.model.name} modelDisplayName={detail.model_config.model.name} />
+      </div>
+      <div
+        className={cn('mr-2 flex items-center border h-8 px-2 space-x-2 rounded-lg bg-indigo-25 border-[#2A87F5]')}
+      >
+        <ModelIcon
+          className='!w-5 !h-5'
+          modelId={modelName}
+          providerName={provideName}
+        />
+        <div className='text-[13px] text-gray-900 font-medium'>
+          <ModelName modelId={modelName} modelDisplayName={modelName} />
+        </div>
+        <ModelModeTypeLabel type={ModelModeType.chat} isHighlight />
       </div>
       <Popover
         position='br'
@@ -202,12 +227,11 @@ function DetailPanel<T extends ChatConversationFullDetailResponse | CompletionCo
       </div>
     </div>
     {/* Panel Body */}
-    <div className='bg-gray-50 border border-gray-100 px-4 py-3 mx-6 my-4 rounded-lg'>
-      <div className='text-gray-500 text-xs flex items-center'>
-        <SparklesIcon className='h-3 w-3 mr-1' />{isChatMode ? t('appLog.detail.promptTemplateBeforeChat') : t('appLog.detail.promptTemplate')}
+    {varList.length > 0 && (
+      <div className='px-6 pt-4 pb-2'>
+        <VarPanel varList={varList} />
       </div>
-      <div className='text-gray-700 font-medium text-sm mt-2'>{detail.model_config?.pre_prompt || emptyText}</div>
-    </div>
+    )}
     {!isChatMode
       ? <div className="px-2.5 py-4">
         <Chat

@@ -49,6 +49,7 @@ const config: ProviderConfig = {
     },
     defaultValue: {
       model_type: 'text-generation',
+      model_mode: 'chat',
     },
     validateKeys: [
       'model_type',
