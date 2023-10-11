@@ -20,6 +20,7 @@ class MilvusConfig(BaseModel):
     password: str
     secure: bool = False
     batch_size: int = 100
+    timeout: int = 60
 
     @root_validator()
     def validate_config(cls, values: dict) -> dict:
@@ -39,7 +40,8 @@ class MilvusConfig(BaseModel):
             'port': self.port,
             'user': self.user,
             'password': self.password,
-            'secure': self.secure
+            'secure': self.secure,
+            'timeout': self.timeout
         }
 
 
