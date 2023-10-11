@@ -10,7 +10,6 @@ import {
   TextNode,
 } from 'lexical'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
-import type { InitialEditorStateType } from '@lexical/react/LexicalComposer'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary'
@@ -44,7 +43,8 @@ import {
 import { useEventEmitterContextContext } from '@/context/event-emitter'
 
 export type PromptEditorProps = {
-  value?: InitialEditorStateType
+  className?: string
+  value?: string
   editable?: boolean
   onChange?: (text: string) => void
   onBlur?: () => void
@@ -76,6 +76,7 @@ export type PromptEditorProps = {
 }
 
 const PromptEditor: FC<PromptEditorProps> = ({
+  className,
   value,
   editable = true,
   onChange,
@@ -130,7 +131,8 @@ const PromptEditor: FC<PromptEditorProps> = ({
 
   const handleEditorChange = (editorState: EditorState) => {
     const text = editorState.read(() => $getRoot().getTextContent())
-    if (onChange && value !== text)
+
+    if (onChange && value?.replaceAll('\n', '') !== text.replaceAll('\n', ''))
       onChange(text)
   }
 
@@ -151,7 +153,7 @@ const PromptEditor: FC<PromptEditorProps> = ({
     <LexicalComposer initialConfig={{ ...initialConfig, editable }}>
       <div className='relative'>
         <RichTextPlugin
-          contentEditable={<ContentEditable className='outline-none text-sm text-gray-700 leading-6' />}
+          contentEditable={<ContentEditable className={`${className} outline-none text-sm text-gray-700 leading-6`} />}
           placeholder={<Placeholder />}
           ErrorBoundary={LexicalErrorBoundary}
         />
