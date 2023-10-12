@@ -227,7 +227,8 @@ class AppModelConfig(db.Model):
             prompt_type=self.prompt_type,
             chat_prompt_config=self.chat_prompt_config,
             completion_prompt_config=self.completion_prompt_config,
-            dataset_configs=self.dataset_configs
+            dataset_configs=self.dataset_configs,
+            retriever_resource=self.retriever_resource
         )
 
         return new_app_model_config
