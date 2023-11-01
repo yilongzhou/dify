@@ -1,24 +1,26 @@
-from abc import abstractclassmethod
-
+from abc import abstractmethod, ABC
 from core.extension.extensible import Extensible
 
 
-class Moderation(Extensible):
+class Moderation(ABC, Extensible):
 
-    @abstractclassmethod
-    def validate_config(self, config: dict) -> None:
-        pass
-
-    @abstractclassmethod
-    def moderation_for_inputs(self, config: dict):
-        pass
-
-    @abstractclassmethod
-    def moderation_for_outputs(self, config: dict):
+    @classmethod
+    @abstractmethod
+    def validate_config(cls, config: dict) -> None:
         pass
 
     @classmethod
-    def _validate_inputs_and_outputs_config(self, config: dict, is_preset_response_required: bool) -> None:
+    @abstractmethod
+    def moderation_for_inputs(cls, tenant_id: str, config: dict, inputs: dict, query: str):
+        pass
+
+    @classmethod
+    @abstractmethod
+    def moderation_for_output(cls, tenant_id: str, config: dict, output: str):
+        pass
+
+    @classmethod
+    def _validate_inputs_and_outputs_config(cls, config: dict, is_preset_response_required: bool) -> None:
         # inputs_configs
         inputs_configs = config.get("inputs_configs")
         if not isinstance(inputs_configs, dict):
@@ -43,3 +45,6 @@ class Moderation(Extensible):
         
         if outputs_configs_enabled and not outputs_configs.get("preset_response"):
             raise ValueError("outputs_configs.preset_response is required")
+
+class ModerationException(Exception):
+    pass
