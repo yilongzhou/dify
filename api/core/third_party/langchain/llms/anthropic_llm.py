@@ -1,7 +1,7 @@
 from typing import Dict
 
 from langchain.chat_models import ChatAnthropic
-from langchain.llms.anthropic import _to_secret
+from langchain.llms.anthropic import convert_to_secret_str
 from langchain.schema import ChatMessage, BaseMessage, HumanMessage, AIMessage, SystemMessage
 from langchain.utils import get_from_dict_or_env, check_package_version
 from pydantic import root_validator
@@ -11,7 +11,7 @@ class AnthropicLLM(ChatAnthropic):
     @root_validator()
     def validate_environment(cls, values: Dict) -> Dict:
         """Validate that api key and python package exists in environment."""
-        values["anthropic_api_key"] = _to_secret(
+        values["anthropic_api_key"] = convert_to_secret_str(
             get_from_dict_or_env(values, "anthropic_api_key", "ANTHROPIC_API_KEY")
         )
         # Get custom api url from environment.

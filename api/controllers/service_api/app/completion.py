@@ -2,11 +2,8 @@ import json
 import logging
 from typing import Union, Generator
 
-from datasets import Dataset
 from flask import stream_with_context, Response
 from flask_restful import reqparse
-from ragas import evaluate
-from ragas.metrics import answer_relevancy, context_precision, faithfulness
 from werkzeug.exceptions import NotFound, InternalServerError
 
 import services
@@ -56,84 +53,6 @@ class CompletionApi(AppApiResource):
             )
 
             return compact_response(response)
-        except services.errors.conversation.ConversationNotExistsError:
-            raise NotFound("Conversation Not Exists.")
-        except services.errors.conversation.ConversationCompletedError:
-            raise ConversationCompletedError()
-        except services.errors.app_model_config.AppModelConfigBrokenError:
-            logging.exception("App model config broken.")
-            raise AppUnavailableError()
-        except ProviderTokenNotInitError as ex:
-            raise ProviderNotInitializeError(ex.description)
-        except QuotaExceededError:
-            raise ProviderQuotaExceededError()
-        except ModelCurrentlyNotSupportError:
-            raise ProviderModelCurrentlyNotSupportError()
-        except (LLMBadRequestError, LLMAPIConnectionError, LLMAPIUnavailableError,
-                LLMRateLimitError, LLMAuthorizationError) as e:
-            raise CompletionRequestError(str(e))
-        except ValueError as e:
-            raise e
-        except Exception as e:
-            logging.exception("internal server error.")
-            raise InternalServerError()
-
-
-class CompletionEvaluateApi(AppApiResource):
-    def post(self, app_model, end_user):
-        if app_model.mode != 'chat':
-            raise AppUnavailableError()
-
-        parser = reqparse.RequestParser()
-        parser.add_argument('inputs', type=dict, required=True, location='json')
-        parser.add_argument('queries', type=list, location='json', default='')
-        parser.add_argument('files', type=list, required=False, location='json')
-        parser.add_argument('response_mode', type=str, choices=['blocking', 'streaming'], location='json')
-        parser.add_argument('user', type=str, location='json')
-        parser.add_argument('retriever_from', type=str, required=False, default='dev', location='json')
-
-        args = parser.parse_args()
-
-        streaming = args['response_mode'] == 'streaming'
-
-        if end_user is None and args['user'] is not None:
-            end_user = create_or_update_end_user_for_user_id(app_model, args['user'])
-
-        args['auto_generate_name'] = False
-        queries = args['queries']
-        try:
-            questions = []
-            answers = []
-            contexts = []
-            for query in queries:
-                args['query'] = query
-                response = CompletionService.completion(
-                    app_model=app_model,
-                    user=end_user,
-                    args=args,
-                    from_source='api',
-                    streaming=streaming,
-                )
-                questions.append(query)
-                answers.append(response['answer'])
-                context = []
-                metadata = response['metadata']
-                if 'retriever_resources' in metadata and metadata['retriever_resources']:
-                    retriever_resources = response['metadata']['retriever_resources']
-                    for retriever_resource in retriever_resources:
-                        context.append(retriever_resource['content'])
-                else:
-                    context.append('')
-                contexts.append(context)
-            ds = Dataset.from_dict(
-                {
-                    "question": questions,
-                    "answer": answers,
-                    "contexts": contexts,
-                }
-            )
-            result = evaluate(ds, [answer_relevancy, context_precision, faithfulness])
-            return result
         except services.errors.conversation.ConversationNotExistsError:
             raise NotFound("Conversation Not Exists.")
         except services.errors.conversation.ConversationCompletedError:
@@ -269,7 +188,6 @@ def compact_response(response: Union[dict | Generator]) -> Response:
 
 
 api.add_resource(CompletionApi, '/completion-messages')
-api.add_resource(CompletionEvaluateApi, '/chat-evaluate')
 api.add_resource(CompletionStopApi, '/completion-messages/<string:task_id>/stop')
 api.add_resource(ChatApi, '/chat-messages')
 api.add_resource(ChatStopApi, '/chat-messages/<string:task_id>/stop')
